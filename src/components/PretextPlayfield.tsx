@@ -1,7 +1,7 @@
 import { prepareWithSegments, type PreparedTextWithSegments } from '@chenglou/pretext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { attribution, chitChatKicker, excerpt } from '../content/chessFlourish';
-import { flowAroundObstacle } from '../pretext/flowAroundObstacle';
+import { flowAroundMask, type ObstacleSpan } from '../pretext/flowAroundMask';
 
 const FONT_PX = 17;
 const FONT_SPEC = `${FONT_PX}px "Source Serif 4", Georgia, serif`;
@@ -59,6 +59,7 @@ export function PretextPlayfield() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const preparedRef = useRef<PreparedTextWithSegments | null>(null);
   const pieceRef = useRef({ x: 96, y: 72 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
@@ -69,6 +70,11 @@ export function PretextPlayfield() {
   const [width, setWidth] = useState(320);
   const [knightsReady, setKnightsReady] = useState(false);
   const [pieceDims, setPieceDims] = useState({ w: KNIGHT_TARGET_W, h: KNIGHT_TARGET_W });
+  const maskRef = useRef<{
+    w: number;
+    h: number;
+    alpha: Uint8ClampedArray;
+  } | null>(null);
 
   const fullText =
     excerpt +
@@ -115,6 +121,27 @@ export function PretextPlayfield() {
     };
   }, []);
 
+  const rebuildMaskIfNeeded = useCallback((img: HTMLImageElement | null) => {
+    if (!img || !img.complete || img.naturalWidth <= 0) return;
+    const w = Math.max(1, Math.round(pieceDims.w));
+    const h = Math.max(1, Math.round(pieceDims.h));
+    const existing = maskRef.current;
+    if (existing && existing.w === w && existing.h === h) return;
+
+    if (!maskCanvasRef.current) maskCanvasRef.current = document.createElement('canvas');
+    const c = maskCanvasRef.current;
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const alpha = new Uint8ClampedArray(w * h);
+    for (let i = 0, j = 3; i < alpha.length; i++, j += 4) alpha[i] = data[j]!;
+    maskRef.current = { w, h, alpha };
+  }, [pieceDims.h, pieceDims.w]);
+
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
     const prepared = preparedRef.current;
@@ -135,18 +162,47 @@ export function PretextPlayfield() {
     const ph = pieceDims.h;
     const { x: px, y: py } = pieceRef.current;
 
+    const knight = protection ? blackImgRef.current : whiteImgRef.current;
+    // Use whichever image loaded first for the mask — silhouette is the same.
+    rebuildMaskIfNeeded(whiteImgRef.current ?? blackImgRef.current);
+
+    const alphaMask = maskRef.current;
+    const alphaThr = 18;
+
+    const getSpanForRow = (rowTop: number, rowBottom: number): ObstacleSpan | null => {
+      if (protection) return null;
+      if (!alphaMask) return { startX: px, endX: px + pw };
+      const yMid = (rowTop + rowBottom) * 0.5;
+      const relY = yMid - py;
+      if (relY < 0 || relY >= ph) return null;
+      const iy = Math.max(0, Math.min(alphaMask.h - 1, Math.floor((relY / ph) * alphaMask.h)));
+      let minX = Infinity;
+      let maxX = -Infinity;
+      const rowOff = iy * alphaMask.w;
+      for (let ix = 0; ix < alphaMask.w; ix++) {
+        if (alphaMask.alpha[rowOff + ix]! > alphaThr) {
+          if (ix < minX) minX = ix;
+          if (ix > maxX) maxX = ix;
+        }
+      }
+      if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return null;
+      const startX = px + (minX / alphaMask.w) * pw;
+      const endX = px + ((maxX + 1) / alphaMask.w) * pw;
+      return { startX, endX };
+    };
+
     const flowOpts = {
       textLeft,
       textRight,
       textTop,
       baseWidth,
       lineStep,
-      obstacle: { x: px, y: py, w: pw, h: ph },
       gap: 10,
       minColumn: 56,
+      getObstacleSpanForRow: getSpanForRow,
     };
 
-    const contentH = flowAroundObstacle(prepared, mctx, FONT_SPEC, '#1a1a1a', flowOpts);
+    const contentH = flowAroundMask(prepared, mctx, FONT_SPEC, '#1a1a1a', flowOpts);
     const cssH = Math.max(
       300,
       Math.ceil(textTop + contentH + PAD + 28),
@@ -164,11 +220,10 @@ export function PretextPlayfield() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawCheckerboardBg(ctx, cssW, cssH, 26, '#f4f3ef', '#e4e2dc');
 
-    flowAroundObstacle(prepared, ctx, FONT_SPEC, '#1a1a1a', flowOpts);
+    flowAroundMask(prepared, ctx, FONT_SPEC, '#1a1a1a', flowOpts);
 
     const pieceX = px;
     const pieceY = py;
-    const knight = protection ? blackImgRef.current : whiteImgRef.current;
 
     if (knight && knightsReady && knight.complete && knight.naturalWidth > 0) {
       ctx.shadowColor = 'rgba(0,0,0,0.22)';
@@ -195,7 +250,7 @@ export function PretextPlayfield() {
       ctx.strokeRect(pieceX - 6, pieceY - 6, pw + 12, ph + 12);
       ctx.setLineDash([]);
     }
-  }, [width, protection, knightsReady, pieceDims.w, pieceDims.h]);
+  }, [width, protection, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded]);
 
   useEffect(() => {
     paint();

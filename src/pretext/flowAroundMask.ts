@@ -6,30 +6,38 @@ function isFinished(prepared: PreparedTextWithSegments, cursor: LayoutCursor, ma
   return layoutNextLine(prepared, cursor, maxWidth) === null;
 }
 
-export type FlowAroundOptions = {
+export type ObstacleSpan = { startX: number; endX: number };
+
+export type FlowAroundMaskOptions = {
   textLeft: number;
   textRight: number;
   textTop: number;
   baseWidth: number;
   lineStep: number;
-  obstacle: { x: number; y: number; w: number; h: number };
   gap: number;
   minColumn: number;
+  /**
+   * For a given row, return the blocked X interval in canvas coordinates.
+   * Return null for “no obstacle this row”.
+   */
+  getObstacleSpanForRow: (rowTop: number, rowBottom: number) => ObstacleSpan | null;
 };
 
 /**
- * Lays out prepared text with `layoutNextLine`, splitting rows around a rectangular obstacle
- * (left column, then right column on the same baseline when the row intersects the box).
+ * Layout text with `layoutNextLine`, splitting around an obstacle span per-row.
+ *
+ * This is a greedy 2-column flow: left line, then right line on same baseline.
+ * Works well for a single silhouette obstacle (e.g. a knight PNG).
  */
-export function flowAroundObstacle(
+export function flowAroundMask(
   prepared: PreparedTextWithSegments,
   ctx: CanvasRenderingContext2D,
   font: string,
   fillStyle: string,
-  opts: FlowAroundOptions,
+  opts: FlowAroundMaskOptions,
 ): number {
-  const { textLeft, textRight, textTop, baseWidth, lineStep, gap, minColumn } = opts;
-  const { x: ox, y: oy, w: ow, h: oh } = opts.obstacle;
+  const { textLeft, textRight, textTop, baseWidth, lineStep, gap, minColumn, getObstacleSpanForRow } =
+    opts;
 
   let cursor: LayoutCursor = { ...START };
   let y = textTop;
@@ -38,32 +46,39 @@ export function flowAroundObstacle(
   ctx.textBaseline = 'top';
 
   let guard = 0;
-  const maxGuard = 5000;
+  const maxGuard = 6000;
 
   while (guard++ < maxGuard) {
     if (isFinished(prepared, cursor, baseWidth)) break;
 
     const rowTop = y;
     const rowBottom = y + lineStep;
-    const overlapsY = rowBottom > oy && rowTop < oy + oh;
-    const obstacleSpansText =
-      Math.min(ox + ow, textRight) > Math.max(ox, textLeft) &&
-      Math.max(ox, textLeft) < textRight &&
-      Math.min(ox + ow, textRight) > textLeft;
+    const span = getObstacleSpanForRow(rowTop, rowBottom);
 
-    const splitRow = overlapsY && obstacleSpansText;
-
-    if (!splitRow) {
+    if (!span) {
       const line = layoutNextLine(prepared, cursor, baseWidth);
       if (!line) break;
-      ctx.fillText(line.text, textLeft, y);
+      if (line.text.length > 0) ctx.fillText(line.text, textLeft, y);
       cursor = line.end;
       y += lineStep;
       continue;
     }
 
-    let wLeft = ox - gap - textLeft;
-    let wRight = textRight - gap - (ox + ow);
+    const clippedStart = Math.max(textLeft, Math.min(textRight, span.startX));
+    const clippedEnd = Math.max(textLeft, Math.min(textRight, span.endX));
+    const usable = clippedEnd > clippedStart;
+
+    if (!usable) {
+      const line = layoutNextLine(prepared, cursor, baseWidth);
+      if (!line) break;
+      if (line.text.length > 0) ctx.fillText(line.text, textLeft, y);
+      cursor = line.end;
+      y += lineStep;
+      continue;
+    }
+
+    let wLeft = clippedStart - gap - textLeft;
+    let wRight = textRight - gap - clippedEnd;
     if (wLeft < minColumn) wLeft = 0;
     if (wRight < minColumn) wRight = 0;
 
@@ -72,9 +87,7 @@ export function flowAroundObstacle(
     if (wLeft > 0) {
       const lineL = layoutNextLine(prepared, cursor, wLeft);
       if (lineL) {
-        if (lineL.text.length > 0) {
-          ctx.fillText(lineL.text, textLeft, y);
-        }
+        if (lineL.text.length > 0) ctx.fillText(lineL.text, textLeft, y);
         cursor = lineL.end;
         advanced = true;
       }
@@ -83,9 +96,7 @@ export function flowAroundObstacle(
     if (wRight > 0) {
       const lineR = layoutNextLine(prepared, cursor, wRight);
       if (lineR) {
-        if (lineR.text.length > 0) {
-          ctx.fillText(lineR.text, ox + ow + gap, y);
-        }
+        if (lineR.text.length > 0) ctx.fillText(lineR.text, clippedEnd + gap, y);
         cursor = lineR.end;
         advanced = true;
       }
@@ -94,7 +105,7 @@ export function flowAroundObstacle(
     if (!advanced) {
       const line = layoutNextLine(prepared, cursor, baseWidth);
       if (!line) break;
-      ctx.fillText(line.text, textLeft, y);
+      if (line.text.length > 0) ctx.fillText(line.text, textLeft, y);
       cursor = line.end;
     }
 
@@ -103,3 +114,4 @@ export function flowAroundObstacle(
 
   return y - textTop;
 }
+

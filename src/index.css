@@ -88,9 +88,9 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #f6f3ec 0%, #ebe6dd 100%);
-  border-bottom: 4px solid var(--board-edge);
-  box-shadow: 0 6px 24px var(--shadow);
+  background: none;
+  border-bottom: none;
+  box-shadow: none;
 }
 
 .site-banner img {
