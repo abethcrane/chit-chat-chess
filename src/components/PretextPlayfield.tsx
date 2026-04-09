@@ -1,15 +1,15 @@
 import { prepareWithSegments, type PreparedTextWithSegments } from '@chenglou/pretext';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { attribution, chitChatKicker, excerpt } from '../content/chessFlourish';
+import { attribution, excerpt } from '../content/chessFlourish';
 import { flowAroundMask, type ObstacleSpan } from '../pretext/flowAroundMask';
 
 const FONT_PX = 17;
 const FONT_SPEC = `${FONT_PX}px "Source Serif 4", Georgia, serif`;
 const LINE_HEIGHT_MULT = 1.45;
 const PAD = 20;
-const KNIGHT_TARGET_W = 72;
+const PIECE_TARGET_W = 72;
 
-type PieceKind = 'knightWhite' | 'knightBlack' | 'bishop';
+type PieceKind = 'knightWhite' | 'knightBlack' | 'bishop' | 'king' | 'queen' | 'rook' | 'pawn';
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -21,22 +21,6 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener('change', onChange);
   }, []);
   return reduced;
-}
-
-function burstConfetti() {
-  const root = document.createElement('div');
-  root.className = 'confetti';
-  root.setAttribute('aria-hidden', 'true');
-  const colors = ['#2c2c2c', '#f7f7f2', '#c9a0a8', '#e8c4cc', '#8b6914', '#f5d0da'];
-  for (let i = 0; i < 26; i++) {
-    const bit = document.createElement('span');
-    bit.style.left = `${Math.random() * 100}%`;
-    bit.style.background = colors[i % colors.length]!;
-    bit.style.animationDelay = `${Math.random() * 0.35}s`;
-    root.appendChild(bit);
-  }
-  document.body.appendChild(root);
-  window.setTimeout(() => root.remove(), 2400);
 }
 
 function burstHearts() {
@@ -82,14 +66,17 @@ export function PretextPlayfield() {
   const preparedRef = useRef<PreparedTextWithSegments | null>(null);
   const pieceRef = useRef({ x: 96, y: 72 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
-  const clickRef = useRef({ count: 0, t: 0 });
+  // (Reserved for future: multi-gesture interactions.)
   const whiteImgRef = useRef<HTMLImageElement | null>(null);
   const blackImgRef = useRef<HTMLImageElement | null>(null);
   const bishopImgRef = useRef<HTMLImageElement | null>(null);
-  const [protection, setProtection] = useState(false);
+  const kingImgRef = useRef<HTMLImageElement | null>(null);
+  const queenImgRef = useRef<HTMLImageElement | null>(null);
+  const rookImgRef = useRef<HTMLImageElement | null>(null);
+  const pawnImgRef = useRef<HTMLImageElement | null>(null);
   const [width, setWidth] = useState(320);
   const [knightsReady, setKnightsReady] = useState(false);
-  const [pieceDims, setPieceDims] = useState({ w: KNIGHT_TARGET_W, h: KNIGHT_TARGET_W });
+  const [pieceDims, setPieceDims] = useState({ w: PIECE_TARGET_W, h: PIECE_TARGET_W });
   const [activePiece, setActivePiece] = useState<PieceKind>('knightWhite');
   const [quip, setQuip] = useState<string | null>(null);
   const quipTimerRef = useRef<number | null>(null);
@@ -99,13 +86,7 @@ export function PretextPlayfield() {
     alpha: Uint8ClampedArray;
   } | null>(null);
 
-  const fullText =
-    excerpt +
-    '\n\n' +
-    chitChatKicker +
-    (protection
-      ? ' (Horse protection: the treatise may not compress around Kevin.)'
-      : '');
+  const fullText = excerpt;
 
   useEffect(() => {
     preparedRef.current = prepareWithSegments(fullText, FONT_SPEC);
@@ -116,7 +97,11 @@ export function PretextPlayfield() {
     const white = new Image();
     const black = new Image();
     const bishop = new Image();
-    let remaining = 3;
+    const king = new Image();
+    const queen = new Image();
+    const rook = new Image();
+    const pawn = new Image();
+    let remaining = 7;
     let cancelled = false;
 
     const finish = () => {
@@ -125,11 +110,22 @@ export function PretextPlayfield() {
       whiteImgRef.current = white.naturalWidth > 0 ? white : null;
       blackImgRef.current = black.naturalWidth > 0 ? black : null;
       bishopImgRef.current = bishop.naturalWidth > 0 ? bishop : null;
+      kingImgRef.current = king.naturalWidth > 0 ? king : null;
+      queenImgRef.current = queen.naturalWidth > 0 ? queen : null;
+      rookImgRef.current = rook.naturalWidth > 0 ? rook : null;
+      pawnImgRef.current = pawn.naturalWidth > 0 ? pawn : null;
       // Initialize dimensions from whichever piece is active (default knightWhite).
-      const initImg = whiteImgRef.current ?? bishopImgRef.current ?? blackImgRef.current;
+      const initImg =
+        whiteImgRef.current ??
+        bishopImgRef.current ??
+        kingImgRef.current ??
+        queenImgRef.current ??
+        rookImgRef.current ??
+        pawnImgRef.current ??
+        blackImgRef.current;
       if (initImg?.naturalWidth) {
         const ar = initImg.naturalWidth / initImg.naturalHeight || 1;
-        const pw = KNIGHT_TARGET_W;
+        const pw = PIECE_TARGET_W;
         const ph = Math.max(40, Math.round(pw / ar));
         setPieceDims({ w: pw, h: ph });
       }
@@ -139,12 +135,24 @@ export function PretextPlayfield() {
     white.onload = finish;
     black.onload = finish;
     bishop.onload = finish;
+    king.onload = finish;
+    queen.onload = finish;
+    rook.onload = finish;
+    pawn.onload = finish;
     white.onerror = finish;
     black.onerror = finish;
     bishop.onerror = finish;
+    king.onerror = finish;
+    queen.onerror = finish;
+    rook.onerror = finish;
+    pawn.onerror = finish;
     white.src = `${base}images/white-knight.png`;
     black.src = `${base}images/black-knight.png`;
     bishop.src = `${base}images/bishop.png`;
+    king.src = `${base}images/king.png`;
+    queen.src = `${base}images/queen.png`;
+    rook.src = `${base}images/rook.png`;
+    pawn.src = `${base}images/pawn.png`;
 
     return () => {
       cancelled = true;
@@ -155,12 +163,20 @@ export function PretextPlayfield() {
     const img =
       activePiece === 'bishop'
         ? bishopImgRef.current
-        : activePiece === 'knightBlack'
-          ? blackImgRef.current
-          : whiteImgRef.current;
+        : activePiece === 'king'
+          ? kingImgRef.current
+          : activePiece === 'queen'
+            ? queenImgRef.current
+            : activePiece === 'rook'
+              ? rookImgRef.current
+              : activePiece === 'pawn'
+                ? pawnImgRef.current
+                : activePiece === 'knightBlack'
+                  ? blackImgRef.current
+                  : whiteImgRef.current;
     if (!img?.naturalWidth) return;
     const ar = img.naturalWidth / img.naturalHeight || 1;
-    const pw = KNIGHT_TARGET_W;
+    const pw = PIECE_TARGET_W;
     const ph = Math.max(40, Math.round(pw / ar));
     setPieceDims({ w: pw, h: ph });
     // Force mask rebuild for new shape/size.
@@ -211,16 +227,24 @@ export function PretextPlayfield() {
     const pieceImg =
       activePiece === 'bishop'
         ? bishopImgRef.current
-        : activePiece === 'knightBlack'
-          ? blackImgRef.current
-          : whiteImgRef.current;
+        : activePiece === 'king'
+          ? kingImgRef.current
+          : activePiece === 'queen'
+            ? queenImgRef.current
+            : activePiece === 'rook'
+              ? rookImgRef.current
+              : activePiece === 'pawn'
+                ? pawnImgRef.current
+                : activePiece === 'knightBlack'
+                  ? blackImgRef.current
+                  : whiteImgRef.current;
 
     rebuildMaskIfNeeded(pieceImg);
 
     const alphaMask = maskRef.current;
     const alphaThr = 18;
 
-    const bubble = protection ? 14 : 0;
+    const bubble = 0;
 
     const getSpanForRow = (rowTop: number, rowBottom: number): ObstacleSpan | null => {
       if (!alphaMask) return { startX: px, endX: px + pw };
@@ -295,14 +319,7 @@ export function PretextPlayfield() {
       ctx.fillText('♘', pieceX + pw / 2 - 4, pieceY + ph / 2 - 6);
     }
 
-    if (protection) {
-      ctx.strokeStyle = 'rgba(183, 110, 121, 0.9)';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([6, 4]);
-      ctx.strokeRect(pieceX - 6, pieceY - 6, pw + 12, ph + 12);
-      ctx.setLineDash([]);
-    }
-  }, [width, protection, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded, activePiece]);
+  }, [width, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded, activePiece]);
 
   useEffect(() => {
     paint();
@@ -342,29 +359,22 @@ export function PretextPlayfield() {
           return "please don’t take my horse i love him";
         case 'bishop':
           return 'my hat is not a handle. i am a delicate little lad.';
+        case 'king':
+          return 'i can’t move there, it’s simply not safe for me (emotionally).';
+        case 'queen':
+          return 'i will do anything for you but i will complain the whole time.';
+        case 'rook':
+          return 'straight lines only. do not ask me to be cute about it.';
+        case 'pawn':
+          return 'i’m just a little guy. i’m doing my best.';
       }
     })();
     setQuip(say);
+    burstHearts();
     if (quipTimerRef.current) window.clearTimeout(quipTimerRef.current);
     quipTimerRef.current = window.setTimeout(() => setQuip(null), 1400);
 
-    const now = performance.now();
-    if (now - clickRef.current.t < 520) {
-      clickRef.current.count += 1;
-    } else {
-      clickRef.current.count = 1;
-    }
-    clickRef.current.t = now;
-    if (clickRef.current.count >= 3) {
-      clickRef.current.count = 0;
-      setProtection((p) => {
-        if (!p) {
-          burstHearts();
-          burstConfetti();
-        }
-        return !p;
-      });
-    }
+    // (No more triple-tap protection mode.)
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -397,9 +407,6 @@ export function PretextPlayfield() {
   const staticCopy = (
     <div className="static-prose">
       <p>{excerpt}</p>
-      <p>
-        <em>{chitChatKicker}</em>
-      </p>
       <cite>{attribution}</cite>
     </div>
   );
@@ -408,7 +415,7 @@ export function PretextPlayfield() {
     return (
       <div className="playfield-wrap">
         <p className="sr-only">
-          {excerpt} {chitChatKicker} {attribution}
+          {excerpt} {attribution}
         </p>
         {staticCopy}
         <p className="playfield-hint">
@@ -421,8 +428,7 @@ export function PretextPlayfield() {
   return (
     <div className="playfield-wrap">
       <p className="sr-only">
-        {excerpt} {chitChatKicker} {attribution}. Drag Kevin; text reflows around him. Triple activation
-        toggles horse protection.
+        {excerpt} {attribution}. Drag pieces; text reflows around them.
       </p>
       <div ref={wrapRef}>
         <canvas
@@ -442,7 +448,7 @@ export function PretextPlayfield() {
           onClick={() => setActivePiece('knightWhite')}
         >
           <img src={`${import.meta.env.BASE_URL}images/white-knight.png`} alt="" />
-          <span className="pixel-label">Knight</span>
+          <span className="pixel-label">Knight (Kevin)</span>
         </button>
         <button
           type="button"
@@ -450,7 +456,7 @@ export function PretextPlayfield() {
           onClick={() => setActivePiece('knightBlack')}
         >
           <img src={`${import.meta.env.BASE_URL}images/black-knight.png`} alt="" />
-          <span className="pixel-label">Knight (dark)</span>
+          <span className="pixel-label">Knight (Kayla)</span>
         </button>
         <button
           type="button"
@@ -460,12 +466,41 @@ export function PretextPlayfield() {
           <img src={`${import.meta.env.BASE_URL}images/bishop.png`} alt="" />
           <span className="pixel-label">Bishop</span>
         </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'king' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('king')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/king.png`} alt="" />
+          <span className="pixel-label">King</span>
+        </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'queen' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('queen')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/queen.png`} alt="" />
+          <span className="pixel-label">Queen</span>
+        </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'rook' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('rook')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/rook.png`} alt="" />
+          <span className="pixel-label">Rook</span>
+        </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'pawn' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('pawn')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/pawn.png`} alt="" />
+          <span className="pixel-label">Pawn</span>
+        </button>
       </div>
       {quip ? <div className="speech-bubble" role="status">{quip}</div> : null}
-      <p className="playfield-hint">
-        Triple-tap for <strong>horse protection</strong>: Kevin gets a bigger personal bubble, so the
-        paragraph has to give him extra space.
-      </p>
+      <p className="playfield-hint">Drag a piece into the paragraph and watch it politely reroute.</p>
     </div>
   );
 }

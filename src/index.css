@@ -73,6 +73,17 @@ a:hover {
 .shell {
   min-height: 100vh;
   padding: 0 0 2.5rem;
+  background: transparent;
+  position: relative;
+}
+
+/* Fixed 100vh backdrop: doesn't scale with page height */
+.shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  z-index: -1;
   background-color: #e8e4dc;
   background-image:
     linear-gradient(180deg, rgba(255, 254, 251, 0.82) 0%, rgba(248, 245, 238, 0.78) 55%, rgba(255, 254, 251, 0.85) 100%),
