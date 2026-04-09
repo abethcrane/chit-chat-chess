@@ -9,6 +9,8 @@ const LINE_HEIGHT_MULT = 1.45;
 const PAD = 20;
 const KNIGHT_TARGET_W = 72;
 
+type PieceKind = 'knightWhite' | 'knightBlack' | 'bishop';
+
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -66,10 +68,12 @@ export function PretextPlayfield() {
   const clickRef = useRef({ count: 0, t: 0 });
   const whiteImgRef = useRef<HTMLImageElement | null>(null);
   const blackImgRef = useRef<HTMLImageElement | null>(null);
+  const bishopImgRef = useRef<HTMLImageElement | null>(null);
   const [protection, setProtection] = useState(false);
   const [width, setWidth] = useState(320);
   const [knightsReady, setKnightsReady] = useState(false);
   const [pieceDims, setPieceDims] = useState({ w: KNIGHT_TARGET_W, h: KNIGHT_TARGET_W });
+  const [activePiece, setActivePiece] = useState<PieceKind>('knightWhite');
   const maskRef = useRef<{
     w: number;
     h: number;
@@ -92,7 +96,8 @@ export function PretextPlayfield() {
     const base = import.meta.env.BASE_URL;
     const white = new Image();
     const black = new Image();
-    let remaining = 2;
+    const bishop = new Image();
+    let remaining = 3;
     let cancelled = false;
 
     const finish = () => {
@@ -100,6 +105,7 @@ export function PretextPlayfield() {
       if (remaining > 0 || cancelled) return;
       whiteImgRef.current = white.naturalWidth > 0 ? white : null;
       blackImgRef.current = black.naturalWidth > 0 ? black : null;
+      bishopImgRef.current = bishop.naturalWidth > 0 ? bishop : null;
       if (white.naturalWidth > 0) {
         const ar = white.naturalWidth / white.naturalHeight || 1;
         const pw = KNIGHT_TARGET_W;
@@ -111,10 +117,13 @@ export function PretextPlayfield() {
 
     white.onload = finish;
     black.onload = finish;
+    bishop.onload = finish;
     white.onerror = finish;
     black.onerror = finish;
+    bishop.onerror = finish;
     white.src = `${base}images/white-knight.png`;
     black.src = `${base}images/black-knight.png`;
+    bishop.src = `${base}images/bishop.png`;
 
     return () => {
       cancelled = true;
@@ -162,9 +171,14 @@ export function PretextPlayfield() {
     const ph = pieceDims.h;
     const { x: px, y: py } = pieceRef.current;
 
-    const knight = protection ? blackImgRef.current : whiteImgRef.current;
-    // Use whichever image loaded first for the mask — silhouette is the same.
-    rebuildMaskIfNeeded(whiteImgRef.current ?? blackImgRef.current);
+    const pieceImg =
+      activePiece === 'bishop'
+        ? bishopImgRef.current
+        : activePiece === 'knightBlack'
+          ? blackImgRef.current
+          : whiteImgRef.current;
+
+    rebuildMaskIfNeeded(pieceImg);
 
     const alphaMask = maskRef.current;
     const alphaThr = 18;
@@ -225,11 +239,11 @@ export function PretextPlayfield() {
     const pieceX = px;
     const pieceY = py;
 
-    if (knight && knightsReady && knight.complete && knight.naturalWidth > 0) {
+    if (pieceImg && knightsReady && pieceImg.complete && pieceImg.naturalWidth > 0) {
       ctx.shadowColor = 'rgba(0,0,0,0.22)';
       ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 4;
-      ctx.drawImage(knight, pieceX, pieceY, pw, ph);
+      ctx.drawImage(pieceImg, pieceX, pieceY, pw, ph);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
     } else {
@@ -250,7 +264,7 @@ export function PretextPlayfield() {
       ctx.strokeRect(pieceX - 6, pieceY - 6, pw + 12, ph + 12);
       ctx.setLineDash([]);
     }
-  }, [width, protection, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded]);
+  }, [width, protection, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded, activePiece]);
 
   useEffect(() => {
     paint();
@@ -366,6 +380,32 @@ export function PretextPlayfield() {
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         />
+      </div>
+      <div className="piece-dock" aria-label="Piece dock">
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'knightWhite' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('knightWhite')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/white-knight.png`} alt="" />
+          <span>Knight</span>
+        </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'knightBlack' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('knightBlack')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/black-knight.png`} alt="" />
+          <span>Knight (dark)</span>
+        </button>
+        <button
+          type="button"
+          className={`piece-dock__piece ${activePiece === 'bishop' ? 'is-active' : ''}`}
+          onClick={() => setActivePiece('bishop')}
+        >
+          <img src={`${import.meta.env.BASE_URL}images/bishop.png`} alt="" />
+          <span>Bishop</span>
+        </button>
       </div>
       <p className="playfield-hint">
         The treatise has to share the row with him now. Triple-tap for <strong>horse protection</strong>{' '}

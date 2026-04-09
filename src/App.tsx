@@ -1,8 +1,8 @@
 import { Hero } from './components/Hero';
+import { HouseRules } from './components/HouseRules';
 import { PretextPlayfield } from './components/PretextPlayfield';
 import { SiteBanner } from './components/SiteBanner';
 import { SiteFooter } from './components/SiteFooter';
-import { ValueProps } from './components/ValueProps';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
@@ -15,27 +15,21 @@ export function App() {
       <SiteBanner />
       <div className="page page--board">
         <Hero />
-        <ValueProps />
+        <HouseRules />
         <section className="panel panel--rose" aria-labelledby="playfield-heading">
           <h2 id="playfield-heading" className="section-title">
             Help Kevin escape the Very Serious Paragraphs
           </h2>
           <p className="section-lede">
-            That wall of words is from an old chess treatise — beautiful, but dense. Drag Kevin: lines
-            split left and right of him so he’s not painted over.{' '}
-            <a href="https://www.pretext.cool/blog/what-is-pretext" target="_blank" rel="noreferrer">
-              Pretext
-            </a>{' '}
-            makes that reflow cheap frame-to-frame.
+            That wall of words is from an old chess treatise — beautiful, but dense. Let's mix it up.
           </p>
-          <PretextPlayfield />
+          <PretextPlayfield/>
         </section>
         <VibePanel />
         <section className="cta" aria-labelledby="cta-heading">
           <h2 id="cta-heading">Want in?</h2>
           <p>
-            We’re still setting up the table. Check back soon, or nudge your co-organizer for the real
-            invite link when it exists.
+            We’re still setting up the table. Check back soon!
           </p>
         </section>
         <SiteFooter />
