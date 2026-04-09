@@ -1,12 +1,12 @@
-import { prepareWithSegments, layoutWithLines, type PreparedTextWithSegments } from '@chenglou/pretext';
+import { prepareWithSegments, type PreparedTextWithSegments } from '@chenglou/pretext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { attribution, chitChatKicker, excerpt } from '../content/chessFlourish';
+import { flowAroundObstacle } from '../pretext/flowAroundObstacle';
 
 const FONT_PX = 17;
 const FONT_SPEC = `${FONT_PX}px "Source Serif 4", Georgia, serif`;
 const LINE_HEIGHT_MULT = 1.45;
 const PAD = 20;
-/** Target width for knight photo on canvas; height follows aspect ratio */
 const KNIGHT_TARGET_W = 72;
 
 function usePrefersReducedMotion(): boolean {
@@ -58,10 +58,10 @@ export function PretextPlayfield() {
   const reducedMotion = usePrefersReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const preparedRef = useRef<PreparedTextWithSegments | null>(null);
   const pieceRef = useRef({ x: 96, y: 72 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
-  const lastHeightRef = useRef(220);
   const clickRef = useRef({ count: 0, t: 0 });
   const whiteImgRef = useRef<HTMLImageElement | null>(null);
   const blackImgRef = useRef<HTMLImageElement | null>(null);
@@ -120,31 +120,38 @@ export function PretextPlayfield() {
     const prepared = preparedRef.current;
     if (!canvas || !prepared) return;
 
+    if (!measureCanvasRef.current) measureCanvasRef.current = document.createElement('canvas');
+    const mctx = measureCanvasRef.current.getContext('2d');
+    if (!mctx) return;
+
     const cssW = width;
     const textLeft = PAD;
     const textRight = cssW - PAD;
     const textTop = PAD;
     const baseWidth = Math.max(120, textRight - textLeft);
+    const lineStep = FONT_PX * LINE_HEIGHT_MULT;
 
     const pw = pieceDims.w;
     const ph = pieceDims.h;
     const { x: px, y: py } = pieceRef.current;
 
-    const textBottom = textTop + lastHeightRef.current;
-    const overlapX = Math.max(0, Math.min(px + pw, textRight) - Math.max(px, textLeft));
-    const overlapY = Math.max(0, Math.min(py + ph, textBottom) - Math.max(py, textTop));
+    const flowOpts = {
+      textLeft,
+      textRight,
+      textTop,
+      baseWidth,
+      lineStep,
+      obstacle: { x: px, y: py, w: pw, h: ph },
+      gap: 10,
+      minColumn: 56,
+    };
 
-    // Serious prose "crowds" the knight; protection mode = it can't squeeze him
-    const penalty =
-      protection || overlapX <= 0 || overlapY <= 0
-        ? 0
-        : Math.min(baseWidth * 0.52, overlapX * 1.12 + 26);
-    const maxWidth = Math.max(130, baseWidth - penalty);
-
-    const { lines, height } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT_MULT);
-    lastHeightRef.current = height;
-
-    const cssH = Math.max(280, Math.ceil(textTop + height + PAD + 36), Math.ceil(py + ph + PAD + 16));
+    const contentH = flowAroundObstacle(prepared, mctx, FONT_SPEC, '#1a1a1a', flowOpts);
+    const cssH = Math.max(
+      300,
+      Math.ceil(textTop + contentH + PAD + 28),
+      Math.ceil(py + ph + PAD + 16),
+    );
 
     const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
     canvas.width = Math.floor(cssW * dpr);
@@ -155,32 +162,23 @@ export function PretextPlayfield() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawCheckerboardBg(ctx, cssW, cssH, 14, '#f7f7f2', '#d4d4ce');
+    drawCheckerboardBg(ctx, cssW, cssH, 26, '#f4f3ef', '#e4e2dc');
 
-    const lineStep = FONT_PX * LINE_HEIGHT_MULT;
-    ctx.font = FONT_SPEC;
-    ctx.fillStyle = '#1a1a1a';
-    ctx.textBaseline = 'top';
-
-    let y = textTop;
-    for (const line of lines) {
-      ctx.fillText(line.text, textLeft, y);
-      y += lineStep;
-    }
+    flowAroundObstacle(prepared, ctx, FONT_SPEC, '#1a1a1a', flowOpts);
 
     const pieceX = px;
     const pieceY = py;
     const knight = protection ? blackImgRef.current : whiteImgRef.current;
 
     if (knight && knightsReady && knight.complete && knight.naturalWidth > 0) {
-      ctx.shadowColor = 'rgba(0,0,0,0.25)';
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(0,0,0,0.22)';
+      ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 4;
       ctx.drawImage(knight, pieceX, pieceY, pw, ph);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
     } else {
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.fillRect(pieceX, pieceY, pw, ph);
       ctx.strokeStyle = '#2c2c2c';
       ctx.lineWidth = 2;
@@ -191,7 +189,7 @@ export function PretextPlayfield() {
     }
 
     if (protection) {
-      ctx.strokeStyle = 'rgba(183, 110, 121, 0.85)';
+      ctx.strokeStyle = 'rgba(183, 110, 121, 0.9)';
       ctx.lineWidth = 3;
       ctx.setLineDash([6, 4]);
       ctx.strokeRect(pieceX - 6, pieceY - 6, pw + 12, ph + 12);
@@ -300,14 +298,14 @@ export function PretextPlayfield() {
   return (
     <div className="playfield-wrap">
       <p className="sr-only">
-        {excerpt} {chitChatKicker} {attribution}. Kevin the knight can be dragged; triple activation
-        toggles horse protection so dense text no longer squeezes his space.
+        {excerpt} {chitChatKicker} {attribution}. Drag Kevin; text reflows around him. Triple activation
+        toggles horse protection.
       </p>
       <div ref={wrapRef}>
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="Draggable knight photo over reflowing book excerpt"
+          aria-label="Draggable knight; text wraps around the piece"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -315,8 +313,8 @@ export function PretextPlayfield() {
         />
       </div>
       <p className="playfield-hint">
-        Triple-tap Kevin to toggle <strong>horse protection</strong> (rose border): the old book
-        isn’t allowed to smush him. Drag him anyway — it’s fun.
+        The treatise has to share the row with him now. Triple-tap for <strong>horse protection</strong>{' '}
+        (rose ring + moody black Kevin).
       </p>
     </div>
   );

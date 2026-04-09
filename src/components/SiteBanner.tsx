@@ -1,3 +1,4 @@
+/** Swap for another wide plate (e.g. KMS495.jpg) — banner uses object-fit: contain so the full image shows. */
 const BANNER = '2book43.jpg';
 
 export function SiteBanner() {
