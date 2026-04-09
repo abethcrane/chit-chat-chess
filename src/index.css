@@ -27,6 +27,12 @@ body {
   min-height: 100vh;
 }
 
+canvas,
+button,
+a {
+  cursor: inherit;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -137,7 +143,29 @@ a:hover {
 
 .prose {
   margin: 0 0 0.95rem;
-  max-width: 62ch;
+  max-width: none;
+}
+
+.panel {
+  position: relative;
+}
+
+/* Subtle pixel-window border (not neon, just crunchy) */
+.panel--note,
+.panel--rose,
+.cta,
+.playfield-wrap {
+  box-shadow:
+    0 0 0 1px rgba(44, 44, 44, 0.12),
+    6px 6px 0 rgba(44, 44, 44, 0.06);
+}
+
+.pixel-label {
+  font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .lede {
@@ -307,9 +335,69 @@ a:hover {
   font-size: 0.85rem;
 }
 
+.piece-dock__piece span.pixel-label {
+  font-size: 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.hearts {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 60;
+}
+
+.hearts span {
+  position: absolute;
+  top: -10%;
+  font-size: 16px;
+  opacity: 0.95;
+  animation: hearts-fall 1.8s ease-in forwards;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.14));
+}
+
+@keyframes hearts-fall {
+  to {
+    transform: translateY(110vh) rotate(25deg);
+    opacity: 0;
+  }
+}
+
 .piece-dock__piece.is-active {
   border-color: rgba(183, 110, 121, 0.75);
   box-shadow: 0 0 0 2px rgba(183, 110, 121, 0.18);
+}
+
+.speech-bubble {
+  display: inline-block;
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(44, 44, 44, 0.2);
+  color: var(--ink);
+  max-width: 60ch;
+  box-shadow: 4px 4px 0 rgba(44, 44, 44, 0.06);
+  font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.speech-bubble::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-right: 1px solid rgba(44, 44, 44, 0.2);
+  border-bottom: 1px solid rgba(44, 44, 44, 0.2);
+  transform: translateX(14px) rotate(45deg);
+  margin-top: 6px;
 }
 
 .static-prose {

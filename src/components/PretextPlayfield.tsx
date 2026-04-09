@@ -39,6 +39,23 @@ function burstConfetti() {
   window.setTimeout(() => root.remove(), 2400);
 }
 
+function burstHearts() {
+  const root = document.createElement('div');
+  root.className = 'hearts';
+  root.setAttribute('aria-hidden', 'true');
+  const hearts = ['♥', '♡', '❦'];
+  for (let i = 0; i < 18; i++) {
+    const bit = document.createElement('span');
+    bit.textContent = hearts[i % hearts.length]!;
+    bit.style.left = `${Math.random() * 100}%`;
+    bit.style.color = i % 3 === 0 ? '#b76e79' : i % 3 === 1 ? '#c9a0a8' : '#8b4a5c';
+    bit.style.animationDelay = `${Math.random() * 0.22}s`;
+    root.appendChild(bit);
+  }
+  document.body.appendChild(root);
+  window.setTimeout(() => root.remove(), 2000);
+}
+
 function drawCheckerboardBg(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -74,6 +91,8 @@ export function PretextPlayfield() {
   const [knightsReady, setKnightsReady] = useState(false);
   const [pieceDims, setPieceDims] = useState({ w: KNIGHT_TARGET_W, h: KNIGHT_TARGET_W });
   const [activePiece, setActivePiece] = useState<PieceKind>('knightWhite');
+  const [quip, setQuip] = useState<string | null>(null);
+  const quipTimerRef = useRef<number | null>(null);
   const maskRef = useRef<{
     w: number;
     h: number;
@@ -106,8 +125,10 @@ export function PretextPlayfield() {
       whiteImgRef.current = white.naturalWidth > 0 ? white : null;
       blackImgRef.current = black.naturalWidth > 0 ? black : null;
       bishopImgRef.current = bishop.naturalWidth > 0 ? bishop : null;
-      if (white.naturalWidth > 0) {
-        const ar = white.naturalWidth / white.naturalHeight || 1;
+      // Initialize dimensions from whichever piece is active (default knightWhite).
+      const initImg = whiteImgRef.current ?? bishopImgRef.current ?? blackImgRef.current;
+      if (initImg?.naturalWidth) {
+        const ar = initImg.naturalWidth / initImg.naturalHeight || 1;
         const pw = KNIGHT_TARGET_W;
         const ph = Math.max(40, Math.round(pw / ar));
         setPieceDims({ w: pw, h: ph });
@@ -129,6 +150,22 @@ export function PretextPlayfield() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const img =
+      activePiece === 'bishop'
+        ? bishopImgRef.current
+        : activePiece === 'knightBlack'
+          ? blackImgRef.current
+          : whiteImgRef.current;
+    if (!img?.naturalWidth) return;
+    const ar = img.naturalWidth / img.naturalHeight || 1;
+    const pw = KNIGHT_TARGET_W;
+    const ph = Math.max(40, Math.round(pw / ar));
+    setPieceDims({ w: pw, h: ph });
+    // Force mask rebuild for new shape/size.
+    maskRef.current = null;
+  }, [activePiece]);
 
   const rebuildMaskIfNeeded = useCallback((img: HTMLImageElement | null) => {
     if (!img || !img.complete || img.naturalWidth <= 0) return;
@@ -183,8 +220,9 @@ export function PretextPlayfield() {
     const alphaMask = maskRef.current;
     const alphaThr = 18;
 
+    const bubble = protection ? 14 : 0;
+
     const getSpanForRow = (rowTop: number, rowBottom: number): ObstacleSpan | null => {
-      if (protection) return null;
       if (!alphaMask) return { startX: px, endX: px + pw };
       const yMid = (rowTop + rowBottom) * 0.5;
       const relY = yMid - py;
@@ -200,8 +238,8 @@ export function PretextPlayfield() {
         }
       }
       if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return null;
-      const startX = px + (minX / alphaMask.w) * pw;
-      const endX = px + ((maxX + 1) / alphaMask.w) * pw;
+      const startX = px + (minX / alphaMask.w) * pw - bubble;
+      const endX = px + ((maxX + 1) / alphaMask.w) * pw + bubble;
       return { startX, endX };
     };
 
@@ -297,6 +335,19 @@ export function PretextPlayfield() {
     canvas.setPointerCapture(e.pointerId);
     dragRef.current = { dx: x - px, dy: y - py };
 
+    const say = (() => {
+      switch (activePiece) {
+        case 'knightWhite':
+        case 'knightBlack':
+          return "please don’t take my horse i love him";
+        case 'bishop':
+          return 'my hat is not a handle. i am a delicate little lad.';
+      }
+    })();
+    setQuip(say);
+    if (quipTimerRef.current) window.clearTimeout(quipTimerRef.current);
+    quipTimerRef.current = window.setTimeout(() => setQuip(null), 1400);
+
     const now = performance.now();
     if (now - clickRef.current.t < 520) {
       clickRef.current.count += 1;
@@ -307,7 +358,10 @@ export function PretextPlayfield() {
     if (clickRef.current.count >= 3) {
       clickRef.current.count = 0;
       setProtection((p) => {
-        if (!p) burstConfetti();
+        if (!p) {
+          burstHearts();
+          burstConfetti();
+        }
         return !p;
       });
     }
@@ -388,7 +442,7 @@ export function PretextPlayfield() {
           onClick={() => setActivePiece('knightWhite')}
         >
           <img src={`${import.meta.env.BASE_URL}images/white-knight.png`} alt="" />
-          <span>Knight</span>
+          <span className="pixel-label">Knight</span>
         </button>
         <button
           type="button"
@@ -396,7 +450,7 @@ export function PretextPlayfield() {
           onClick={() => setActivePiece('knightBlack')}
         >
           <img src={`${import.meta.env.BASE_URL}images/black-knight.png`} alt="" />
-          <span>Knight (dark)</span>
+          <span className="pixel-label">Knight (dark)</span>
         </button>
         <button
           type="button"
@@ -404,12 +458,13 @@ export function PretextPlayfield() {
           onClick={() => setActivePiece('bishop')}
         >
           <img src={`${import.meta.env.BASE_URL}images/bishop.png`} alt="" />
-          <span>Bishop</span>
+          <span className="pixel-label">Bishop</span>
         </button>
       </div>
+      {quip ? <div className="speech-bubble" role="status">{quip}</div> : null}
       <p className="playfield-hint">
-        The treatise has to share the row with him now. Triple-tap for <strong>horse protection</strong>{' '}
-        (rose ring + moody black Kevin).
+        Triple-tap for <strong>horse protection</strong>: Kevin gets a bigger personal bubble, so the
+        paragraph has to give him extra space.
       </p>
     </div>
   );
