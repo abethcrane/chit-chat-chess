@@ -1,15 +1,15 @@
 const items = [
-  'Advanced-beginner friendly: know the rules (or we’ll teach you), no rating required.',
-  'Takebacks, friendly post-mortems, and “wait let’s replay from move 12” — if you both want to.',
-  'Bits over brutality: “don’t take my horse, I love him” is valid table talk.',
-  'Co-op energy: make the game more interesting together, not just extract a W.',
+  'For advanced beginners: you know the rules (or we’ll gently teach you). Ratings optional, tea encouraged.',
+  'Takebacks, giggly post-mortems, “pause — let’s try that again from here” when you both feel like it.',
+  'Flair over fear: “please don’t take Kevin, he’s sensitive” is legitimate negotiation.',
+  'Co-op sparkle: conspire to make the position silly, not just to grind out a win.',
 ];
 
 export function ValueProps() {
   return (
     <section aria-labelledby="values-heading">
       <h2 id="values-heading" className="section-title">
-        What this is
+        House rules, loosely
       </h2>
       <ul className="pillars">
         {items.map((text) => (

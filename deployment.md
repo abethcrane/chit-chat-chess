@@ -71,7 +71,7 @@ npm run preview
 
 ## Assets
 
-`npm run sync-assets` (runs automatically before `dev` / `build`) copies `images/` → `public/images/` and `premise.png` → `public/premise.png`. Gallery metadata: edit `public/images/artworks.json` after sync (or maintain a template and merge by hand).
+`npm run sync-assets` (runs automatically before `dev` / `build`) copies `images/` → `public/images/` and `premise.png` → `public/premise.png`. Curated banner/vibe filenames live in [`src/components/SiteBanner.tsx`](src/components/SiteBanner.tsx) and [`src/components/VibePanel.tsx`](src/components/VibePanel.tsx); add `white-knight.png` / `black-knight.png` under `images/` for the draggable knight.
 
 ## Optional: large PDF in git
 

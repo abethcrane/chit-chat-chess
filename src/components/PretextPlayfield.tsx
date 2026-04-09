@@ -6,7 +6,8 @@ const FONT_PX = 17;
 const FONT_SPEC = `${FONT_PX}px "Source Serif 4", Georgia, serif`;
 const LINE_HEIGHT_MULT = 1.45;
 const PAD = 20;
-const PIECE_SIZE = 56;
+/** Target width for knight photo on canvas; height follows aspect ratio */
+const KNIGHT_TARGET_W = 72;
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -24,8 +25,8 @@ function burstConfetti() {
   const root = document.createElement('div');
   root.className = 'confetti';
   root.setAttribute('aria-hidden', 'true');
-  const colors = ['#c9b8a4', '#6b4e3d', '#e8dfd2', '#f0e8db', '#1e1a16'];
-  for (let i = 0; i < 22; i++) {
+  const colors = ['#2c2c2c', '#f7f7f2', '#c9a0a8', '#e8c4cc', '#8b6914', '#f5d0da'];
+  for (let i = 0; i < 26; i++) {
     const bit = document.createElement('span');
     bit.style.left = `${Math.random() * 100}%`;
     bit.style.background = colors[i % colors.length]!;
@@ -36,18 +37,21 @@ function burstConfetti() {
   window.setTimeout(() => root.remove(), 2400);
 }
 
-function drawPieceBg(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+function drawCheckerboardBg(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  sq: number,
+  light: string,
+  dark: string,
+) {
+  for (let y = 0; y < h + sq; y += sq) {
+    for (let x = 0; x < w + sq; x += sq) {
+      const ix = Math.floor(x / sq) + Math.floor(y / sq);
+      ctx.fillStyle = ix % 2 === 0 ? light : dark;
+      ctx.fillRect(x, y, sq, sq);
+    }
+  }
 }
 
 export function PretextPlayfield() {
@@ -55,22 +59,61 @@ export function PretextPlayfield() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const preparedRef = useRef<PreparedTextWithSegments | null>(null);
-  const pieceRef = useRef({ x: 120, y: 80 });
+  const pieceRef = useRef({ x: 96, y: 72 });
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
   const lastHeightRef = useRef(220);
   const clickRef = useRef({ count: 0, t: 0 });
+  const whiteImgRef = useRef<HTMLImageElement | null>(null);
+  const blackImgRef = useRef<HTMLImageElement | null>(null);
   const [protection, setProtection] = useState(false);
   const [width, setWidth] = useState(320);
+  const [knightsReady, setKnightsReady] = useState(false);
+  const [pieceDims, setPieceDims] = useState({ w: KNIGHT_TARGET_W, h: KNIGHT_TARGET_W });
 
   const fullText =
     excerpt +
     '\n\n' +
     chitChatKicker +
-    (protection ? ' Kevin is now under diplomatic immunity.' : '');
+    (protection
+      ? ' (Horse protection: the treatise may not compress around Kevin.)'
+      : '');
 
   useEffect(() => {
     preparedRef.current = prepareWithSegments(fullText, FONT_SPEC);
   }, [fullText]);
+
+  useEffect(() => {
+    const base = import.meta.env.BASE_URL;
+    const white = new Image();
+    const black = new Image();
+    let remaining = 2;
+    let cancelled = false;
+
+    const finish = () => {
+      remaining -= 1;
+      if (remaining > 0 || cancelled) return;
+      whiteImgRef.current = white.naturalWidth > 0 ? white : null;
+      blackImgRef.current = black.naturalWidth > 0 ? black : null;
+      if (white.naturalWidth > 0) {
+        const ar = white.naturalWidth / white.naturalHeight || 1;
+        const pw = KNIGHT_TARGET_W;
+        const ph = Math.max(40, Math.round(pw / ar));
+        setPieceDims({ w: pw, h: ph });
+      }
+      setKnightsReady(true);
+    };
+
+    white.onload = finish;
+    black.onload = finish;
+    white.onerror = finish;
+    black.onerror = finish;
+    white.src = `${base}images/white-knight.png`;
+    black.src = `${base}images/black-knight.png`;
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -83,21 +126,25 @@ export function PretextPlayfield() {
     const textTop = PAD;
     const baseWidth = Math.max(120, textRight - textLeft);
 
-    const pw = PIECE_SIZE;
-    const ph = PIECE_SIZE;
+    const pw = pieceDims.w;
+    const ph = pieceDims.h;
     const { x: px, y: py } = pieceRef.current;
 
     const textBottom = textTop + lastHeightRef.current;
     const overlapX = Math.max(0, Math.min(px + pw, textRight) - Math.max(px, textLeft));
     const overlapY = Math.max(0, Math.min(py + ph, textBottom) - Math.max(py, textTop));
+
+    // Serious prose "crowds" the knight; protection mode = it can't squeeze him
     const penalty =
-      overlapX > 0 && overlapY > 0 ? Math.min(baseWidth * 0.55, overlapX * 1.15 + 28) : 0;
+      protection || overlapX <= 0 || overlapY <= 0
+        ? 0
+        : Math.min(baseWidth * 0.52, overlapX * 1.12 + 26);
     const maxWidth = Math.max(130, baseWidth - penalty);
 
     const { lines, height } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT_MULT);
     lastHeightRef.current = height;
 
-    const cssH = Math.max(260, Math.ceil(textTop + height + PAD + 32), Math.ceil(py + ph + PAD + 12));
+    const cssH = Math.max(280, Math.ceil(textTop + height + PAD + 36), Math.ceil(py + ph + PAD + 16));
 
     const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
     canvas.width = Math.floor(cssW * dpr);
@@ -108,11 +155,11 @@ export function PretextPlayfield() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssW, cssH);
+    drawCheckerboardBg(ctx, cssW, cssH, 14, '#f7f7f2', '#d4d4ce');
 
     const lineStep = FONT_PX * LINE_HEIGHT_MULT;
     ctx.font = FONT_SPEC;
-    ctx.fillStyle = '#1e1a16';
+    ctx.fillStyle = '#1a1a1a';
     ctx.textBaseline = 'top';
 
     let y = textTop;
@@ -123,27 +170,34 @@ export function PretextPlayfield() {
 
     const pieceX = px;
     const pieceY = py;
-    ctx.shadowColor = 'rgba(30, 26, 22, 0.2)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
-    ctx.fillStyle = '#faf6ef';
-    drawPieceBg(ctx, pieceX, pieceY, pw, ph, 10);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = '#c9b8a4';
-    ctx.lineWidth = 2;
-    drawPieceBg(ctx, pieceX, pieceY, pw, ph, 10);
-    ctx.stroke();
+    const knight = protection ? blackImgRef.current : whiteImgRef.current;
 
-    ctx.font = `${Math.floor(ph * 0.62)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#1e1a16';
-    ctx.fillText('♘', pieceX + pw / 2, pieceY + ph / 2 + 1);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-  }, [width]);
+    if (knight && knightsReady && knight.complete && knight.naturalWidth > 0) {
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.drawImage(knight, pieceX, pieceY, pw, ph);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(pieceX, pieceY, pw, ph);
+      ctx.strokeStyle = '#2c2c2c';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pieceX, pieceY, pw, ph);
+      ctx.font = '12px Source Serif 4, Georgia, serif';
+      ctx.fillStyle = '#2c2c2c';
+      ctx.fillText('♘', pieceX + pw / 2 - 4, pieceY + ph / 2 - 6);
+    }
+
+    if (protection) {
+      ctx.strokeStyle = 'rgba(183, 110, 121, 0.85)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(pieceX - 6, pieceY - 6, pw + 12, ph + 12);
+      ctx.setLineDash([]);
+    }
+  }, [width, protection, knightsReady, pieceDims.w, pieceDims.h]);
 
   useEffect(() => {
     paint();
@@ -169,8 +223,9 @@ export function PretextPlayfield() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const { x: px, y: py } = pieceRef.current;
-    const hit =
-      x >= px && x <= px + PIECE_SIZE && y >= py && y <= py + PIECE_SIZE;
+    const pw = pieceDims.w;
+    const ph = pieceDims.h;
+    const hit = x >= px && x <= px + pw && y >= py && y <= py + ph;
     if (!hit) return;
     canvas.setPointerCapture(e.pointerId);
     dragRef.current = { dx: x - px, dy: y - py };
@@ -196,10 +251,12 @@ export function PretextPlayfield() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    const pw = pieceDims.w;
+    const ph = pieceDims.h;
     const x = e.clientX - rect.left - dragRef.current.dx;
     const y = e.clientY - rect.top - dragRef.current.dy;
-    const maxX = rect.width - PIECE_SIZE;
-    const maxY = rect.height - PIECE_SIZE;
+    const maxX = rect.width - pw;
+    const maxY = rect.height - ph;
     pieceRef.current = {
       x: Math.max(0, Math.min(maxX, x)),
       y: Math.max(0, Math.min(maxY, y)),
@@ -233,7 +290,9 @@ export function PretextPlayfield() {
           {excerpt} {chitChatKicker} {attribution}
         </p>
         {staticCopy}
-        <p className="playfield-hint">Motion is reduced on your device — we skipped the draggable demo.</p>
+        <p className="playfield-hint">
+          Motion is reduced on your device — we skipped the draggable knight demo.
+        </p>
       </div>
     );
   }
@@ -241,14 +300,14 @@ export function PretextPlayfield() {
   return (
     <div className="playfield-wrap">
       <p className="sr-only">
-        {excerpt} {chitChatKicker} {attribution}. Interactive canvas: drag the knight to squish the
-        text wrap.
+        {excerpt} {chitChatKicker} {attribution}. Kevin the knight can be dragged; triple activation
+        toggles horse protection so dense text no longer squeezes his space.
       </p>
       <div ref={wrapRef}>
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="Draggable knight over reflowing book excerpt"
+          aria-label="Draggable knight photo over reflowing book excerpt"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -256,10 +315,8 @@ export function PretextPlayfield() {
         />
       </div>
       <p className="playfield-hint">
-        Tip: triple-tap the knight for horse protection mode.{' '}
-        <span className="wobble" aria-hidden>
-          ♘
-        </span>
+        Triple-tap Kevin to toggle <strong>horse protection</strong> (rose border): the old book
+        isn’t allowed to smush him. Drag him anyway — it’s fun.
       </p>
     </div>
   );
