@@ -1,6 +1,6 @@
 const VIBE_IMAGES = [
   {
-    file: '1576d749-d444-4399-8f38-b71931dd6c77_3000.jpg',
+    file: 'women-in-parlour.png',
     caption: 'Ask us about Grand Vizier chess (we have *ideas*).',
   },
   {
