@@ -104,11 +104,22 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   }, [enabledTypes, beginNewGame]);
 
   const undo = useCallback(() => {
-    setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+    setHistory((h) => {
+      if (h.length <= 1) return h;
+      if (!vsAi) return h.slice(0, -1);
+      const last = h[h.length - 1]!;
+      // After you move, it’s AI’s turn; one pop = take back your move (AI hadn’t replied).
+      if (last.toMove === aiColor) return h.slice(0, -1);
+      // It’s your turn again → last ply was AI. One pop would leave AI-to-move and the effect would replay AI.
+      // Pop twice so we land before *your* last move.
+      if (h.length >= 3) return h.slice(0, -2);
+      // Only other ply is AI’s (e.g. you’re Black and White opened): one pop removes that opening.
+      return h.slice(0, -1);
+    });
     setSelected(null);
     setHoverSq(null);
     setHoverExplain(null);
-  }, []);
+  }, [vsAi, aiColor]);
 
   const showBanner = useCallback((msg: string, ms = 3200) => {
     setBanner(msg);

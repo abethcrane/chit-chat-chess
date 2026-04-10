@@ -41,8 +41,7 @@ export function PicnicBar() {
   return (
     <section className="picnic" aria-label="Picnic vibes selector">
       <div className="picnic__header">
-        <span className="pixel-label">picnic_loadout</span>
-        <span className="picnic__line">{line}</span>
+        <span className="pixel-label">Set the table</span>
         <button
           type="button"
           className="picnic__reroll"
