@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import {
   ALL_PIECE_TYPES,
   ChessMatch,
-  composeInstructionText,
+  composeInstructionSections,
+  PRETEXT_CANVAS_CAPTION,
   type PieceType,
 } from './chess-game';
 import { Hero } from './components/Hero';
@@ -21,8 +22,8 @@ export function App() {
   const [enabledPieceTypes, setEnabledPieceTypes] = useState<Set<PieceType>>(
     () => new Set(ALL_PIECE_TYPES),
   );
-  const instructionText = useMemo(
-    () => composeInstructionText(enabledPieceTypes),
+  const instructionSections = useMemo(
+    () => composeInstructionSections(enabledPieceTypes),
     [enabledPieceTypes],
   );
 
@@ -38,8 +39,9 @@ export function App() {
             Learn the pieces, then play
           </h2>
           <p className="section-lede">
-            Toggle which pieces appear on the board, flip a color for each new game against the AI, and use training
-            mode to see glowing legal squares and hover reasons.
+            Toggle which pieces are in play, use <strong>Undo</strong> to step back, and <strong>New game</strong> to
+            reset without changing your color. Training mode highlights legal moves and explains hovers. The board
+            turns so you’re always at the bottom.
           </p>
           <ChessMatch enabledTypes={enabledPieceTypes} onEnabledTypesChange={setEnabledPieceTypes} />
         </section>
@@ -48,10 +50,14 @@ export function App() {
             How the pieces move
           </h2>
           <p className="section-lede">
-            The prose below matches the pieces you enabled above. Drag through real legal moves and watch the text flow
-            around your piece.
+            Rules update when you change the toggles. Below, drag a piece freely through the short caption — the text
+            reflows around it.
           </p>
-          <PretextPlayfield instructionText={instructionText} enabledPieceTypes={enabledPieceTypes} />
+          <PretextPlayfield
+            canvasCaption={PRETEXT_CANVAS_CAPTION}
+            instructionSections={instructionSections}
+            enabledPieceTypes={enabledPieceTypes}
+          />
         </section>
         <VibePanel />
         <section className="cta" aria-labelledby="cta-heading">

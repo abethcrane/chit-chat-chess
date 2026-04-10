@@ -387,6 +387,71 @@ a:hover {
   color: var(--accent);
 }
 
+.instruction-sheet {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(183, 110, 121, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.instruction-sheet__main-title {
+  margin: 0 0 0.75rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.instruction-sheet__block {
+  margin: 0 0 0.85rem;
+}
+
+.instruction-sheet__block:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
+.instruction-sheet__title {
+  margin: 0 0 0.35rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.instruction-sheet__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.instruction-sheet__list li {
+  margin-bottom: 0.25rem;
+}
+
+.instruction-sheet__list li:last-child {
+  margin-bottom: 0;
+}
+
+.instruction-sheet__cite {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(26, 26, 26, 0.65);
+}
+
+.instruction-sheet__cite cite {
+  font-style: italic;
+}
+
+.instruction-sheet__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
 .piece-dock {
   margin-top: 0.75rem;
   display: flex;
@@ -720,6 +785,16 @@ footer.site-footer p {
 
 .chess-match__btn:hover {
   border-color: var(--rose-deep);
+}
+
+.chess-match__btn--ghost {
+  background: rgba(255, 255, 255, 0.55);
+  border-style: dashed;
+}
+
+.chess-match__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .chess-match__status {

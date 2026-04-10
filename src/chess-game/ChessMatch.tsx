@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chooseAiMove, type AiDifficulty } from './ai/search';
 import { ALL_PIECE_TYPES, type Color, type GameState, type Move, type PieceType, type Square } from './core/types';
-import { fileOf, square, toAlgebraic } from './core/types';
+import { fileOf, rankOf, square, toAlgebraic } from './core/types';
 import { pieceAt as at } from './core/board';
 import { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './core/game';
 import { explainSquare } from './core/explain';
 import { legalMovesFrom } from './core/moves';
 import { pieceImageUrl } from './pieceArt';
 
-function visualToSquare(file: number, rankFromTop: number): Square {
-  const rank = 7 - rankFromTop;
-  return square(file, rank);
+/**
+ * Map screen cell to square. Human’s pieces sit on the bottom row; files mirror for Black
+ * (h-file on the left) like a typical chess UI.
+ */
+function visualToSquare(file: number, rankFromTop: number, human: Color): Square {
+  const rank = human === 'w' ? 7 - rankFromTop : rankFromTop;
+  const f = human === 'w' ? file : 7 - file;
+  return square(f, rank);
 }
 
 function pickMoveForDestination(state: GameState, from: Square, to: Square): Move | null {
@@ -49,7 +54,11 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const [humanColor, setHumanColor] = useState<Color>(() => (Math.random() < 0.5 ? 'w' : 'b'));
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [training, setTraining] = useState(true);
-  const [game, setGame] = useState<GameState>(() => createGame(new Set(ALL_PIECE_TYPES)));
+  const [history, setHistory] = useState<GameState[]>(() => {
+    const s = new Set(ALL_PIECE_TYPES);
+    return [createGame(s)];
+  });
+  const game = history[history.length - 1]!;
   const [selected, setSelected] = useState<Square | null>(null);
   const [hoverSq, setHoverSq] = useState<Square | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
@@ -60,23 +69,46 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
-  const startNewGame = useCallback(() => {
-    const set = new Set(enabledTypes);
-    set.add('K');
-    try {
-      const g = createGame(set);
-      setGame(g);
-      setSelected(null);
-      setHoverSq(null);
-      setBanner(null);
-      setHoverExplain(null);
-      if (vsAi) {
-        setHumanColor(Math.random() < 0.5 ? 'w' : 'b');
+  const beginNewGame = useCallback(
+    (randomizeColor: boolean) => {
+      const set = new Set(enabledTypes);
+      set.add('K');
+      try {
+        const g = createGame(set);
+        setHistory([g]);
+        setSelected(null);
+        setHoverSq(null);
+        setBanner(null);
+        setHoverExplain(null);
+        if (randomizeColor && vsAi) {
+          setHumanColor(Math.random() < 0.5 ? 'w' : 'b');
+        }
+      } catch {
+        setBanner('Need both kings — enable the king for each side.');
       }
-    } catch {
-      setBanner('Need both kings — enable the king for each side.');
+    },
+    [enabledTypes, vsAi],
+  );
+
+  /** When the piece-type set changes, start a fresh standard position (same color) so the board matches the toggles. */
+  const pieceSetSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sig = [...enabledTypes].sort().join('');
+    if (pieceSetSigRef.current === null) {
+      pieceSetSigRef.current = sig;
+      return;
     }
-  }, [enabledTypes, vsAi]);
+    if (pieceSetSigRef.current === sig) return;
+    pieceSetSigRef.current = sig;
+    beginNewGame(false);
+  }, [enabledTypes, beginNewGame]);
+
+  const undo = useCallback(() => {
+    setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+    setSelected(null);
+    setHoverSq(null);
+    setHoverExplain(null);
+  }, []);
 
   const showBanner = useCallback((msg: string, ms = 3200) => {
     setBanner(msg);
@@ -137,7 +169,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       showBanner(`${checked === 'w' ? 'White' : 'Black'} is in check.`, 2800);
     }
 
-    setGame(applied);
+    setHistory((h) => [...h, applied]);
     setSelected(null);
     setHoverExplain(null);
 
@@ -159,15 +191,16 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     let cancelled = false;
     const t = window.setTimeout(() => {
       if (cancelled) return;
-      setGame((g) => {
-        if (g.toMove !== aiColor) return g;
+      setHistory((h) => {
+        const g = h[h.length - 1]!;
+        if (g.toMove !== aiColor) return h;
         const oc2 = evaluateOutcome(g);
-        if (oc2.phase !== 'playing') return g;
+        if (oc2.phase !== 'playing') return h;
         const m = chooseAiMove(g, aiColor, aiDifficulty);
-        if (!m) return g;
+        if (!m) return h;
         const prev = g;
         const next = tryApplyMove(g, m);
-        if (!next) return g;
+        if (!next) return h;
 
         const ocn = outcomeAfterMove(prev, m);
         if (ocn.phase === 'playing' && ocn.sideInCheck) {
@@ -179,7 +212,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         if (ocn.phase === 'checkmate') {
           window.setTimeout(() => showBanner(`Checkmate — ${ocn.winner === 'w' ? 'White' : 'Black'} wins.`, 6000), 0);
         }
-        return next;
+        return [...h, next];
       });
     }, 220);
 
@@ -198,6 +231,13 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   useEffect(() => {
     if (!training || selected === null || hoverSq === null) {
       setHoverExplain(null);
+      return;
+    }
+    // Clicking to select leaves the cursor on the same square; don’t treat that as a “move to here”.
+    if (hoverSq === selected) {
+      setHoverExplain(
+        'Piece selected. Glowing squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.',
+      );
       return;
     }
     const ex = explainSquare(game, selected, hoverSq);
@@ -257,8 +297,16 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
             <input type="checkbox" checked={training} onChange={(e) => setTraining(e.target.checked)} />
             Training highlights
           </label>
-          <button type="button" className="chess-match__btn" onClick={startNewGame}>
-            New game {vsAi ? '(flip color)' : ''}
+          <button type="button" className="chess-match__btn" onClick={() => beginNewGame(false)}>
+            New game
+          </button>
+          {vsAi ? (
+            <button type="button" className="chess-match__btn chess-match__btn--ghost" onClick={() => beginNewGame(true)}>
+              New game · random side
+            </button>
+          ) : null}
+          <button type="button" className="chess-match__btn" onClick={undo} disabled={history.length <= 1}>
+            Undo
           </button>
         </div>
         <p className="chess-match__status">
@@ -283,8 +331,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           {Array.from({ length: 8 }, (_, rankFromTop) => (
             <div key={rankFromTop} className="chess-board__rank" role="row">
               {Array.from({ length: 8 }, (_, file) => {
-                const sq = visualToSquare(file, rankFromTop);
-                const light = (file + rankFromTop) % 2 === 0;
+                const sq = visualToSquare(file, rankFromTop, humanColor);
+                const light = (fileOf(sq) + rankOf(sq)) % 2 === 0;
                 const p = game.board[sq];
                 const isSel = selected === sq;
                 const isLegal = legalDests.has(sq);
@@ -311,7 +359,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                     {p ? (
                       <img
                         className="chess-board__piece"
-                        src={pieceImageUrl(base, p)}
+                        src={pieceImageUrl(base, p, sq)}
                         alt=""
                       />
                     ) : null}

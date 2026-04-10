@@ -17,7 +17,14 @@ export {
 export type { ExplainTag } from './core/explain';
 export { explainSquare, formatSquareLabel } from './core/explain';
 
-export { composeInstructionText, instructionForType } from './copy/instructions';
+export {
+  composeInstructionPlain,
+  composeInstructionSections,
+  composeInstructionText,
+  instructionForType,
+  PRETEXT_CANVAS_CAPTION,
+  type InstructionSection,
+} from './copy/instructions';
 
 export { pieceImagePath, pieceImageUrl } from './pieceArt';
 

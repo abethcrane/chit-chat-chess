@@ -1,19 +1,7 @@
 import { prepareWithSegments, type PreparedTextWithSegments } from '@chenglou/pretext';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { attribution } from '../content/chessFlourish';
-import {
-  createTeachingSandbox,
-  type GameState,
-  legalMovesFrom,
-  tryApplyMove,
-  type Move,
-  type Piece,
-  type PieceType,
-  type Square,
-  fileOf,
-  rankOf,
-  square,
-} from '../chess-game';
+import { type InstructionSection, type PieceType } from '../chess-game';
 import { flowAroundMask, type ObstacleSpan } from '../pretext/flowAroundMask';
 
 const FONT_PX = 17;
@@ -22,15 +10,11 @@ const LINE_HEIGHT_MULT = 1.45;
 const PAD = 20;
 const PIECE_TARGET_W = 72;
 
-/** Snapping grid for the teaching sandbox (d4 ≈ center of this block). */
-const GRID = 34;
-const GRID_OX = 52;
-const GRID_OY = 56;
-
 type PieceKind = 'knightWhite' | 'knightBlack' | 'bishop' | 'king' | 'queen' | 'rook' | 'pawn';
 
 export type PretextPlayfieldProps = {
-  instructionText: string;
+  canvasCaption: string;
+  instructionSections: InstructionSection[];
   enabledPieceTypes: ReadonlySet<PieceType>;
 };
 
@@ -40,8 +24,8 @@ const DOCK_ITEMS: DockDef[] = [
   { kind: 'knightWhite', label: 'Knight (Kevin)', path: 'images/pieces/white-knight1.png', pieceType: 'N' },
   { kind: 'knightBlack', label: 'Knight (Kayla)', path: 'images/pieces/black-knight2.png', pieceType: 'N' },
   { kind: 'bishop', label: 'Bishop', path: 'images/pieces/white-bishop.png', pieceType: 'B' },
-  { kind: 'king', label: 'King', path: 'images/king.png', pieceType: 'K' },
-  { kind: 'queen', label: 'Queen', path: 'images/queen.png', pieceType: 'Q' },
+  { kind: 'king', label: 'King', path: 'images/pieces/white-king.png', pieceType: 'K' },
+  { kind: 'queen', label: 'Queen', path: 'images/pieces/white-queen.png', pieceType: 'Q' },
   { kind: 'rook', label: 'Rook', path: 'images/pieces/white-rook.png', pieceType: 'R' },
   { kind: 'pawn', label: 'Pawn', path: 'images/pieces/white-pawn.png', pieceType: 'P' },
 ];
@@ -67,34 +51,6 @@ function activePieceToHero(kind: PieceKind): { type: PieceType; color: 'w' | 'b'
 
 function pieceTypeForKind(kind: PieceKind): PieceType {
   return activePieceToHero(kind).type;
-}
-
-function findHeroSquare(board: (Piece | null)[], hero: { type: PieceType; color: 'w' | 'b' }): Square {
-  const hits: Square[] = [];
-  for (let i = 0; i < 64; i++) {
-    const p = board[i];
-    if (p && p.type === hero.type && p.color === hero.color) hits.push(i as Square);
-  }
-  const d4 = square(3, 3);
-  if (hits.includes(d4)) return d4;
-  return hits[0] ?? d4;
-}
-
-function squareCenterPx(sq: Square): { cx: number; cy: number } {
-  const f = fileOf(sq);
-  const r = rankOf(sq);
-  const col = f;
-  const row = 7 - r;
-  const cx = GRID_OX + col * GRID + GRID / 2;
-  const cy = GRID_OY + row * GRID + GRID / 2;
-  return { cx, cy };
-}
-
-function pickMoveForDestination(state: GameState, from: Square, to: Square): Move | null {
-  const opts = legalMovesFrom(state, from).filter((m) => m.to === to);
-  if (opts.length === 0) return null;
-  const q = opts.find((o) => o.promotion === 'Q');
-  return q ?? opts[0]!;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -143,7 +99,35 @@ function drawCheckerboardBg(
   }
 }
 
-export function PretextPlayfield({ instructionText, enabledPieceTypes }: PretextPlayfieldProps) {
+function InstructionSheet({ sections }: { sections: InstructionSection[] }) {
+  if (sections.length === 0) {
+    return (
+      <div className="instruction-sheet">
+        <p className="instruction-sheet__empty">Enable at least one piece type above to see how it moves.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="instruction-sheet">
+      <h3 className="instruction-sheet__main-title">How the enabled pieces move</h3>
+      {sections.map((s) => (
+        <section key={s.id} className="instruction-sheet__block">
+          <h4 className="instruction-sheet__title">{s.title}</h4>
+          <ul className="instruction-sheet__list">
+            {s.bullets.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </section>
+      ))}
+      <p className="instruction-sheet__cite">
+        <cite>{attribution}</cite>
+      </p>
+    </div>
+  );
+}
+
+export function PretextPlayfield({ canvasCaption, instructionSections, enabledPieceTypes }: PretextPlayfieldProps) {
   const reducedMotion = usePrefersReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -172,14 +156,11 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
     alpha: Uint8ClampedArray;
   } | null>(null);
 
-  const heroForDock = useMemo(() => activePieceToHero(activePiece), [activePiece]);
-  const [teachingGame, setTeachingGame] = useState<GameState>(() => createTeachingSandbox(activePieceToHero('knightWhite')));
-  const teachingRef = useRef(teachingGame);
-  teachingRef.current = teachingGame;
-
-  useEffect(() => {
-    setTeachingGame(createTeachingSandbox(heroForDock));
-  }, [heroForDock]);
+  const plainSr = useMemo(
+    () =>
+      instructionSections.map((s) => `${s.title}: ${s.bullets.join('; ')}`).join(' ') + ` ${attribution}`,
+    [instructionSections],
+  );
 
   useEffect(() => {
     if (!enabledPieceTypes.has(pieceTypeForKind(activePiece))) {
@@ -188,7 +169,7 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
     }
   }, [enabledPieceTypes, activePiece]);
 
-  const fullText = instructionText;
+  const fullText = canvasCaption;
 
   useEffect(() => {
     preparedRef.current = prepareWithSegments(fullText, FONT_SPEC);
@@ -251,8 +232,8 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
     white.src = `${base}images/pieces/white-knight1.png`;
     black.src = `${base}images/pieces/black-knight2.png`;
     bishop.src = `${base}images/pieces/white-bishop.png`;
-    king.src = `${base}images/king.png`;
-    queen.src = `${base}images/queen.png`;
+    king.src = `${base}images/pieces/white-king.png`;
+    queen.src = `${base}images/pieces/white-queen.png`;
     rook.src = `${base}images/pieces/white-rook.png`;
     pawn.src = `${base}images/pieces/white-pawn.png`;
 
@@ -423,16 +404,6 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
 
   }, [width, knightsReady, pieceDims.h, pieceDims.w, rebuildMaskIfNeeded, activePiece]);
 
-  const paintRef = useRef(paint);
-  paintRef.current = paint;
-
-  useLayoutEffect(() => {
-    const h = findHeroSquare(teachingGame.board, heroForDock);
-    const { cx, cy } = squareCenterPx(h);
-    pieceRef.current = { x: cx - pieceDims.w / 2, y: cy - pieceDims.h / 2 };
-    paintRef.current();
-  }, [teachingGame, heroForDock, pieceDims.w, pieceDims.h]);
-
   useEffect(() => {
     paint();
   }, [paint, fullText]);
@@ -508,57 +479,19 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const dragging = dragRef.current !== null;
     dragRef.current = null;
     try {
       canvasRef.current?.releasePointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
-    if (!dragging) return;
-
-    const g = teachingRef.current;
-    const hero = activePieceToHero(activePiece);
-    const heroSq = findHeroSquare(g.board, hero);
-    const moves = legalMovesFrom(g, heroSq);
-    const targets = new Set<Square>(moves.map((m) => m.to));
-    targets.add(heroSq);
-
-    const pw = pieceDims.w;
-    const ph = pieceDims.h;
-    const cx = pieceRef.current.x + pw / 2;
-    const cy = pieceRef.current.y + ph / 2;
-    let bestSq = heroSq;
-    let bestD = Infinity;
-    for (const t of targets) {
-      const c = squareCenterPx(t);
-      const d = (cx - c.cx) ** 2 + (cy - c.cy) ** 2;
-      if (d < bestD) {
-        bestD = d;
-        bestSq = t;
-      }
-    }
-
-    if (bestSq !== heroSq) {
-      const mv = pickMoveForDestination(g, heroSq, bestSq);
-      if (mv) {
-        const next = tryApplyMove(g, mv);
-        if (next) {
-          setTeachingGame(next);
-          return;
-        }
-      }
-    }
-
-    const { cx: sx, cy: sy } = squareCenterPx(findHeroSquare(g.board, hero));
-    pieceRef.current = { x: sx - pw / 2, y: sy - ph / 2 };
-    paintRef.current();
+    paint();
   };
 
   const staticCopy = (
     <div className="static-prose">
-      <p>{instructionText}</p>
-      <cite>{attribution}</cite>
+      <InstructionSheet sections={instructionSections} />
+      <p>{canvasCaption}</p>
     </div>
   );
 
@@ -568,12 +501,10 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
   if (reducedMotion) {
     return (
       <div className="playfield-wrap">
-        <p className="sr-only">
-          {instructionText} {attribution}
-        </p>
+        <p className="sr-only">{plainSr}</p>
         {staticCopy}
         <p className="playfield-hint">
-          Motion is reduced on your device — we skipped the draggable teaching demo.
+          Motion is reduced on your device — we skipped the draggable piece demo.
         </p>
       </div>
     );
@@ -581,14 +512,13 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
 
   return (
     <div className="playfield-wrap">
-      <p className="sr-only">
-        {instructionText} {attribution}. Drag a piece; it snaps along legal moves on the teaching grid.
-      </p>
+      <p className="sr-only">{plainSr}. {canvasCaption}</p>
+      <InstructionSheet sections={instructionSections} />
       <div ref={wrapRef}>
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="Teaching piece; text wraps around it; release on a legal square"
+          aria-label="Draggable piece; text flows around it"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -610,8 +540,8 @@ export function PretextPlayfield({ instructionText, enabledPieceTypes }: Pretext
       </div>
       {quip ? <div className="speech-bubble" role="status">{quip}</div> : null}
       <p className="playfield-hint">
-        Drag the piece; on release it snaps to the nearest legal square on the little board grid (same rules as the
-        match above).
+        Pick a piece silhouette, then drag it anywhere on the canvas — it stays where you put it while the paragraph
+        wraps around it.
       </p>
     </div>
   );

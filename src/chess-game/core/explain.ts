@@ -24,7 +24,8 @@ export type ExplainTag =
   | 'illegal_king_in_check_after'
   | 'illegal_castle_through_check'
   | 'illegal_castle_in_check'
-  | 'illegal_castle_blocked';
+  | 'illegal_castle_blocked'
+  | 'info_same_square';
 
 function isCastleShape(from: Square, to: Square): 'k' | 'q' | null {
   const df = fileOf(to) - fileOf(from);
@@ -80,6 +81,13 @@ function squareSafe(file: number, rank: number): Square | null {
 }
 
 export function explainSquare(state: GameState, from: Square, to: Square): { tag: ExplainTag; text: string } {
+  if (from === to) {
+    return {
+      tag: 'info_same_square',
+      text: 'That’s the piece you selected — there’s no move until you aim at another square. Hover a glowing square for a legal move, or any other square to see why it’s not allowed.',
+    };
+  }
+
   const piece = pieceAt(state, from);
   if (!piece) {
     return { tag: 'illegal_empty', text: 'Empty square — pick one of your pieces.' };
