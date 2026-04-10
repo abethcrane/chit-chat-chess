@@ -1,5 +1,7 @@
-import type { Piece, Square } from './core/types';
-import { fileOf } from './core/types';
+import type { Piece, PieceType, Square } from './core/types';
+import { fileOf, square } from './core/types';
+
+const PREVIEW_SQ = square(0, 0);
 
 /**
  * URL path for a piece sprite, relative to `import.meta.env.BASE_URL` (include `images/...`).
@@ -27,4 +29,9 @@ export function pieceImagePath(p: Piece, sq?: Square): string {
 
 export function pieceImageUrl(baseUrl: string, p: Piece, sq?: Square): string {
   return `${baseUrl}${pieceImagePath(p, sq)}`;
+}
+
+/** White sprite path for piece-type toggles (knight uses queenside art). */
+export function pieceTypeTogglePath(t: PieceType): string {
+  return pieceImagePath({ color: 'w', type: t }, PREVIEW_SQ);
 }

@@ -6,7 +6,16 @@ import { pieceAt as at } from './core/board';
 import { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './core/game';
 import { explainSquare } from './core/explain';
 import { legalMovesFrom } from './core/moves';
-import { pieceImageUrl } from './pieceArt';
+import { pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
+
+const PIECE_TOGGLE_ARIA: Record<PieceType, string> = {
+  K: 'King — always on the board',
+  Q: 'Queen',
+  R: 'Rook',
+  B: 'Bishop',
+  N: 'Knight',
+  P: 'Pawn',
+};
 
 /**
  * Map screen cell to square. Human’s pieces sit on the bottom row; files mirror for Black
@@ -247,7 +256,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     // Clicking to select leaves the cursor on the same square; don’t treat that as a “move to here”.
     if (hoverSq === selected) {
       setHoverExplain(
-        'Piece selected. Glowing squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.',
+        'Piece selected. Highlighted squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.',
       );
       return;
     }
@@ -268,17 +277,34 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     <div className="chess-match">
       <div className="chess-match__toolbar">
         <div className="chess-match__toggles" aria-label="Pieces on the board">
-          {ALL_PIECE_TYPES.map((t) => (
-            <label key={t} className="chess-match__toggle">
-              <input
-                type="checkbox"
-                checked={t === 'K' || enabledTypes.has(t)}
-                disabled={t === 'K'}
-                onChange={() => toggleType(t)}
-              />
-              <span>{t === 'K' ? 'King (always)' : t}</span>
-            </label>
-          ))}
+          {ALL_PIECE_TYPES.map((t) => {
+            const on = t === 'K' || enabledTypes.has(t);
+            return (
+              <label
+                key={t}
+                className={[
+                  'chess-match__piece-toggle',
+                  on ? 'chess-match__piece-toggle--on' : 'chess-match__piece-toggle--off',
+                  t === 'K' ? 'chess-match__piece-toggle--king' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={on}
+                  disabled={t === 'K'}
+                  onChange={() => toggleType(t)}
+                  aria-label={PIECE_TOGGLE_ARIA[t]}
+                />
+                <span className="chess-match__piece-toggle-face" aria-hidden="true">
+                  <img src={`${base}${pieceTypeTogglePath(t)}`} alt="" width={44} height={44} />
+                </span>
+                <span className="chess-match__piece-toggle-name">{t === 'K' ? 'King' : t}</span>
+              </label>
+            );
+          })}
         </div>
         <div className="chess-match__row">
           <label className="chess-match__inline">
@@ -309,11 +335,11 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
             Training highlights
           </label>
           <button type="button" className="chess-match__btn" onClick={() => beginNewGame(false)}>
-            New game
+            Reset board
           </button>
           {vsAi ? (
             <button type="button" className="chess-match__btn chess-match__btn--ghost" onClick={() => beginNewGame(true)}>
-              New game · random side
+              Reset board · random side
             </button>
           ) : null}
           <button type="button" className="chess-match__btn" onClick={undo} disabled={history.length <= 1}>
@@ -347,6 +373,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 const p = game.board[sq];
                 const isSel = selected === sq;
                 const isLegal = legalDests.has(sq);
+                const isLegalCapture = isLegal && p && p.color !== game.toMove;
+                const isLegalQuiet = isLegal && !isLegalCapture;
                 const isHover = hoverSq === sq;
                 return (
                   <button
@@ -359,6 +387,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                       light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
                       isSel ? 'chess-board__sq--selected' : '',
                       isLegal ? 'chess-board__sq--legal' : '',
+                      isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
+                      isLegalCapture ? 'chess-board__sq--legal-capture' : '',
                       isHover ? 'chess-board__sq--hover' : '',
                     ]
                       .filter(Boolean)

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 const DRINKS = [
   { id: 'wine', label: 'wine', emoji: '🍷' },
@@ -15,9 +15,8 @@ const SNACKS = [
 ] as const;
 
 const VIBES = [
-  { id: 'banter', label: 'banter', emoji: '💬' },
-  { id: 'cozy', label: 'cozy', emoji: '🧺' },
-  { id: 'lockin', label: 'lock_in', emoji: '🎧' },
+  { id: 'silly', label: 'banter', emoji: '😜' },
+  { id: 'focused', label: 'lock_in', emoji: '🎧' },
   { id: 'curious', label: 'curious', emoji: '🔎' },
 ] as const;
 
@@ -31,17 +30,10 @@ export function PicnicBar() {
   const [snack, setSnack] = useState<(typeof SNACKS)[number]['id']>(() => pick(SNACKS));
   const [vibe, setVibe] = useState<(typeof VIBES)[number]['id']>(() => pick(VIBES));
 
-  const line = useMemo(() => {
-    const d = DRINKS.find((x) => x.id === drink)!;
-    const s = SNACKS.find((x) => x.id === snack)!;
-    const v = VIBES.find((x) => x.id === vibe)!;
-    return `${d.emoji} ${d.label} + ${s.emoji} ${s.label} + ${v.emoji} ${v.label}`;
-  }, [drink, snack, vibe]);
-
   return (
     <section className="picnic" aria-label="Picnic vibes selector">
       <div className="picnic__header">
-        <span className="pixel-label">Set the table</span>
+        <span className="pixel-label">Set the scene</span>
         <button
           type="button"
           className="picnic__reroll"

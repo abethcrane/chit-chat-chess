@@ -26,15 +26,15 @@ export function App() {
       <SiteBanner />
       <div className="page page--board">
         <Hero />
-        <PicnicBar />
         <HouseRules />
+        <PicnicBar />
         <section className="panel panel--rose" aria-labelledby="learn-heading">
           <h2 id="learn-heading" className="section-title">
             Learn the pieces, then play
           </h2>
           <p className="section-lede">
-            Toggle which pieces are in play, use <strong>Undo</strong> to step back, and <strong>New game</strong> to
-            reset without changing your color. Training mode highlights legal moves and explains hovers. The board
+            Toggle which pieces are in play, use <strong>Undo</strong> to step back, and <strong>Reset board</strong> to
+            start fresh without changing your color. Training mode highlights legal moves and explains hovers. The board
             turns so you’re always at the bottom.
           </p>
           <ChessMatch enabledTypes={enabledPieceTypes} onEnabledTypesChange={setEnabledPieceTypes} />

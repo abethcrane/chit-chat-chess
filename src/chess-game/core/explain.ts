@@ -84,7 +84,7 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
   if (from === to) {
     return {
       tag: 'info_same_square',
-      text: 'That’s the piece you selected — there’s no move until you aim at another square. Hover a glowing square for a legal move, or any other square to see why it’s not allowed.',
+      text: 'That’s the piece you selected — there’s no move until you aim at another square. Hover a highlighted square for a legal move, or any other square to see why it’s not allowed.',
     };
   }
 
