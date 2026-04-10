@@ -209,14 +209,24 @@ a:hover {
   opacity: 0.7;
 }
 
-/* Narrow viewports: wide card, tiny side gutters; keep vertical rhythm from .page */
+/* Narrow viewports: symmetric inset on .shell (padding) so L/R match; card fills content box. */
 @media (max-width: 639px) {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  .shell {
+    padding-left: max(4px, env(safe-area-inset-left, 0px));
+    padding-right: max(4px, env(safe-area-inset-right, 0px));
+  }
+
   .page {
-    width: 97%;
+    width: 100%;
     max-width: none;
-    margin-inline: auto;
+    margin-inline: 0;
     padding-left: 0;
     padding-right: 0;
+    box-sizing: border-box;
   }
 }
 
@@ -335,7 +345,11 @@ a:hover {
   }
 
   .dancing-piece-frame__content {
-    padding: calc(var(--dancing-pad) + 0.95rem) calc(var(--dancing-pad) + 0.7rem);
+    padding: 4px 5px;
+  }
+
+  .playfield-wrap {
+    padding: 0.25rem;
   }
 }
 
@@ -586,6 +600,21 @@ a:hover {
   }
 }
 
+/* After base `.panel--rose` so this wins over `margin: 0 -0.5rem 2rem` (negative sides broke narrow layout). */
+@media (max-width: 639px) {
+  .panel--rose {
+    margin: 0 auto 2rem;
+    padding: 0.4rem 0.3rem 0.2rem;
+    /* Full box border reads as mystery pink verticals on the card edge; keep top/bottom dividers only */
+    border-left: none;
+    border-right: none;
+  }
+
+  .panel--rose + .panel--rose {
+    border-top: none;
+  }
+}
+
 .playfield-wrap {
   border-radius: 2px;
   border: 3px solid var(--board-edge);
@@ -711,6 +740,7 @@ button:disabled {
 /* Curated vibe images */
 .vibe-panel {
   margin-bottom: 2.25rem;
+  padding: 1rem;
 }
 
 .vibe-panel__lede {
@@ -1405,6 +1435,11 @@ footer.site-footer p {
   max-width: 100%;
 }
 
+/* Narrow: real box centers bar+cluster together; wide: contents = bar & cluster stay direct flex children of .chess-board-perspective. */
+.chess-match__board-stack {
+  display: contents;
+}
+
 @media (min-width: 640px) {
   .chess-match__grave-pile {
     overflow-y: auto;
@@ -1583,21 +1618,36 @@ footer.site-footer p {
     overscroll-behavior-x: auto;
   }
 
+  .chess-match__board-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    /* Must match .chess-board-spin-clip (--chess-board-w includes border); 8×sq alone is narrower → grid overflow / board hugs one edge. */
+    width: min(100%, var(--chess-board-w));
+    max-width: 100%;
+    min-width: 0;
+    align-self: center;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
   .chess-match__board-cluster {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     margin-inline: 0;
-    width: min(100%, calc(8 * var(--chess-sq)));
+    width: 100%;
     max-width: 100%;
     min-width: 0;
-    justify-self: center;
+    align-self: stretch;
   }
 
   .chess-match__board-cluster .chess-board-spin-clip {
     grid-column: 1 / -1;
     grid-row: 1;
-    justify-self: center;
+    place-self: center;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .chess-match__graveyards-angel {
@@ -1613,8 +1663,13 @@ footer.site-footer p {
   .chess-match__board-only {
     grid-column: 1 / -1;
     grid-row: 2;
-    justify-self: center;
-    align-items: flex-start;
+    /* Fill the arena row, then center the perspective column — flex-start + max-content
+       left-aligns inside a stretched grid cell (empty band on the right). */
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    align-items: center;
     margin-inline: 0;
   }
 
@@ -1682,6 +1737,27 @@ footer.site-footer p {
     min-height: 3.25rem;
     max-height: 5.5rem;
   }
+
+  /* Single flex child (.board-stack) — center that column; bar width matches board width inside stack. */
+  .chess-board-perspective {
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+  }
+
+  .chess-match__board-bar {
+    flex-wrap: wrap;
+    row-gap: 0.3rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chess-match__foot {
+    width: min(100%, var(--chess-board-w));
+    max-width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
 }
 
 .chess-match__foot {
@@ -1709,7 +1785,6 @@ footer.site-footer p {
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
-  padding: var(--chess-perspective-pad-top) var(--chess-perspective-pad-x) var(--chess-perspective-pad-bottom);
 }
 
 .chess-board {
