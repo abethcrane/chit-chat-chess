@@ -6,7 +6,7 @@ import {
   moveWouldBeCapture,
   pseudoLegalMovesFrom,
 } from './moves';
-import type { GameState, Move, Square } from './types';
+import type { GameState, Move, Piece, Square } from './types';
 import { fileOf, opposite, rankOf, toAlgebraic } from './types';
 
 export type ExplainTag =
@@ -78,6 +78,67 @@ function castleBlockedReason(state: GameState, from: Square, side: 'k' | 'q'): s
 function squareSafe(file: number, rank: number): Square | null {
   if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
   return rank * 8 + file;
+}
+
+/** Richer pawn “why not” when hovering a square that isn’t legal. */
+function explainPawnBlocked(
+  state: GameState,
+  from: Square,
+  to: Square,
+  piece: Piece,
+): { tag: ExplainTag; text: string } | null {
+  const step = piece.color === 'w' ? 1 : -1;
+  const df = fileOf(to) - fileOf(from);
+  const dr = rankOf(to) - rankOf(from);
+  const occ = pieceAt(state, to);
+
+  if (occ && occ.color !== piece.color) {
+    if (df === 0 && dr === step) {
+      return {
+        tag: 'illegal_no_piece_pattern',
+        text: 'Pawns don’t capture straight ahead — only diagonally forward. That square is blocked by an enemy piece; you can’t step forward onto it unless you take on a diagonal.',
+      };
+    }
+    if (df === 0 && dr === 2 * step) {
+      return {
+        tag: 'illegal_blocked',
+        text: 'Pawns can’t capture straight ahead, and they can’t jump a piece — so you can’t land here with a two-square push.',
+      };
+    }
+    if (Math.abs(df) <= 1) {
+      return {
+        tag: 'illegal_no_piece_pattern',
+        text: 'Pawns capture only one square diagonally forward. This enemy isn’t on a square this pawn can take from here.',
+      };
+    }
+  }
+
+  if (occ && occ.color === piece.color) {
+    if (df === 0 && (dr === step || dr === 2 * step)) {
+      return {
+        tag: 'illegal_blocked',
+        text: 'Your own piece sits on that line — pawns can’t move through or onto a friendly square.',
+      };
+    }
+    if (Math.abs(df) === 1 && dr === step) {
+      return {
+        tag: 'illegal_blocked',
+        text: 'Your own piece is on that diagonal — pawns only capture enemies, not friends.',
+      };
+    }
+  }
+
+  if (!occ && df === 0 && dr === 2 * step) {
+    const mid = squareSafe(fileOf(from), rankOf(from) + step);
+    if (mid !== null && pieceAt(state, mid)) {
+      return {
+        tag: 'illegal_blocked',
+        text: 'The square straight in front is occupied — pawns can’t jump over it, even on the first move.',
+      };
+    }
+  }
+
+  return null;
 }
 
 export function explainSquare(state: GameState, from: Square, to: Square): { tag: ExplainTag; text: string } {
@@ -178,9 +239,11 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
     return { tag: 'illegal_no_piece_pattern', text: 'Knights move in an “L” — this square is not a knight hop away.' };
   }
   if (piece.type === 'P') {
+    const pawnHint = explainPawnBlocked(state, from, to, piece);
+    if (pawnHint) return pawnHint;
     return {
       tag: 'illegal_no_piece_pattern',
-      text: 'Pawns move forward (or diagonally only to capture). This square does not match a pawn move.',
+      text: 'Pawns move straight forward to empty squares, or one square diagonally forward to capture. This destination doesn’t fit either.',
     };
   }
   if (piece.type === 'K') {
