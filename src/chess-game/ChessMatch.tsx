@@ -1,12 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chooseAiMove, type AiDifficulty } from './ai/search';
-import { ALL_PIECE_TYPES, type Color, type GameState, type Move, type PieceType, type Square } from './core/types';
+import {
+  ALL_PIECE_TYPES,
+  type Color,
+  type GameState,
+  type Move,
+  type Piece,
+  type PieceType,
+  type Square,
+} from './core/types';
 import { fileOf, rankOf, square, toAlgebraic } from './core/types';
 import { pieceAt as at } from './core/board';
 import { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './core/game';
 import { explainSquare } from './core/explain';
-import { legalMovesFrom } from './core/moves';
-import { pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
+import { getCapturedPiece, legalMovesFrom } from './core/moves';
+import { PIECE_HEIGHT_RATIO, pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
+
+const CAPTURE_SORT: PieceType[] = ['Q', 'R', 'B', 'N', 'P'];
+
+function playOut(start: GameState, moves: readonly Move[]): GameState {
+  let g = start;
+  for (const m of moves) {
+    const n = tryApplyMove(g, m);
+    if (!n) break;
+    g = n;
+  }
+  return g;
+}
+
+function sortCaptured(list: Piece[]): Piece[] {
+  return [...list].sort(
+    (a, b) => CAPTURE_SORT.indexOf(a.type) - CAPTURE_SORT.indexOf(b.type) || a.type.localeCompare(b.type),
+  );
+}
 
 const PIECE_TOGGLE_ARIA: Record<PieceType, string> = {
   K: 'King — always on the board',
@@ -63,11 +89,15 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const [humanColor, setHumanColor] = useState<Color>(() => (Math.random() < 0.5 ? 'w' : 'b'));
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [training, setTraining] = useState(true);
-  const [history, setHistory] = useState<GameState[]>(() => {
+  const [start, setStart] = useState<GameState>(() => {
     const s = new Set(ALL_PIECE_TYPES);
-    return [createGame(s)];
+    return createGame(s);
   });
-  const game = history[history.length - 1]!;
+  const [moveLog, setMoveLog] = useState<Move[]>([]);
+  const startRef = useRef(start);
+  startRef.current = start;
+
+  const game = useMemo(() => playOut(start, moveLog), [start, moveLog]);
   const [selected, setSelected] = useState<Square | null>(null);
   const [hoverSq, setHoverSq] = useState<Square | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
@@ -78,13 +108,31 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
+  const capturePiles = useMemo(() => {
+    const whitePieces: Piece[] = [];
+    const blackPieces: Piece[] = [];
+    let g = start;
+    for (const m of moveLog) {
+      const cap = getCapturedPiece(g, m);
+      if (cap) {
+        if (cap.color === 'w') whitePieces.push(cap);
+        else blackPieces.push(cap);
+      }
+      const n = tryApplyMove(g, m);
+      if (!n) break;
+      g = n;
+    }
+    return { whitePieces: sortCaptured(whitePieces), blackPieces: sortCaptured(blackPieces) };
+  }, [start, moveLog]);
+
   const beginNewGame = useCallback(
     (randomizeColor: boolean) => {
       const set = new Set(enabledTypes);
       set.add('K');
       try {
         const g = createGame(set);
-        setHistory([g]);
+        setStart(g);
+        setMoveLog([]);
         setSelected(null);
         setHoverSq(null);
         setBanner(null);
@@ -113,17 +161,14 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   }, [enabledTypes, beginNewGame]);
 
   const undo = useCallback(() => {
-    setHistory((h) => {
-      if (h.length <= 1) return h;
-      if (!vsAi) return h.slice(0, -1);
-      const last = h[h.length - 1]!;
-      // After you move, it’s AI’s turn; one pop = take back your move (AI hadn’t replied).
-      if (last.toMove === aiColor) return h.slice(0, -1);
-      // It’s your turn again → last ply was AI. One pop would leave AI-to-move and the effect would replay AI.
-      // Pop twice so we land before *your* last move.
-      if (h.length >= 3) return h.slice(0, -2);
-      // Only other ply is AI’s (e.g. you’re Black and White opened): one pop removes that opening.
-      return h.slice(0, -1);
+    setMoveLog((log) => {
+      if (log.length === 0) return log;
+      if (!vsAi) return log.slice(0, -1);
+      const st = startRef.current;
+      const g = playOut(st, log);
+      if (g.toMove === aiColor) return log.slice(0, -1);
+      if (log.length >= 2) return log.slice(0, -2);
+      return log.slice(0, -1);
     });
     setSelected(null);
     setHoverSq(null);
@@ -189,7 +234,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       showBanner(`${checked === 'w' ? 'White' : 'Black'} is in check.`, 2800);
     }
 
-    setHistory((h) => [...h, applied]);
+    setMoveLog((log) => [...log, move]);
     setSelected(null);
     setHoverExplain(null);
 
@@ -211,18 +256,23 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     let cancelled = false;
     const t = window.setTimeout(() => {
       if (cancelled) return;
-      setHistory((h) => {
-        const g = h[h.length - 1]!;
-        if (g.toMove !== aiColor) return h;
+      setMoveLog((log) => {
+        const st = startRef.current;
+        let g = st;
+        for (const mv of log) {
+          const n = tryApplyMove(g, mv);
+          if (!n) return log;
+          g = n;
+        }
+        if (g.toMove !== aiColor) return log;
         const oc2 = evaluateOutcome(g);
-        if (oc2.phase !== 'playing') return h;
+        if (oc2.phase !== 'playing') return log;
         const m = chooseAiMove(g, aiColor, aiDifficulty);
-        if (!m) return h;
-        const prev = g;
+        if (!m) return log;
         const next = tryApplyMove(g, m);
-        if (!next) return h;
+        if (!next) return log;
 
-        const ocn = outcomeAfterMove(prev, m);
+        const ocn = outcomeAfterMove(g, m);
         if (ocn.phase === 'playing' && ocn.sideInCheck) {
           const checked = ocn.sideInCheck;
           window.setTimeout(() => {
@@ -232,7 +282,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         if (ocn.phase === 'checkmate') {
           window.setTimeout(() => showBanner(`Checkmate — ${ocn.winner === 'w' ? 'White' : 'Black'} wins.`, 6000), 0);
         }
-        return [...h, next];
+        return [...log, m];
       });
     }, 220);
 
@@ -249,15 +299,15 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   }, [training, selected, game, outcome.phase, humanColor, vsAi]);
 
   useEffect(() => {
-    if (!training || selected === null || hoverSq === null) {
+    if (!training || selected === null) {
       setHoverExplain(null);
       return;
     }
-    // Clicking to select leaves the cursor on the same square; don’t treat that as a “move to here”.
-    if (hoverSq === selected) {
-      setHoverExplain(
-        'Piece selected. Highlighted squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.',
-      );
+    const selectedHint =
+      'Piece selected. Highlighted squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.';
+    // Keep a line of copy whenever something is selected so the panel height doesn’t jump.
+    if (hoverSq === null || hoverSq === selected) {
+      setHoverExplain(selectedHint);
       return;
     }
     const ex = explainSquare(game, selected, hoverSq);
@@ -342,7 +392,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               Reset board · random side
             </button>
           ) : null}
-          <button type="button" className="chess-match__btn" onClick={undo} disabled={history.length <= 1}>
+          <button type="button" className="chess-match__btn" onClick={undo} disabled={moveLog.length === 0}>
             Undo
           </button>
         </div>
@@ -357,62 +407,97 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         </p>
       </div>
 
-      {banner ? (
-        <div className="chess-match__banner" role="status">
-          {banner}
-        </div>
-      ) : null}
-
-      <div className="chess-match__board-wrap">
-        <div className="chess-board" role="grid" aria-label="Chess board">
-          {Array.from({ length: 8 }, (_, rankFromTop) => (
-            <div key={rankFromTop} className="chess-board__rank" role="row">
-              {Array.from({ length: 8 }, (_, file) => {
-                const sq = visualToSquare(file, rankFromTop, humanColor);
-                const light = (fileOf(sq) + rankOf(sq)) % 2 === 0;
-                const p = game.board[sq];
-                const isSel = selected === sq;
-                const isLegal = legalDests.has(sq);
-                const isLegalCapture = isLegal && p && p.color !== game.toMove;
-                const isLegalQuiet = isLegal && !isLegalCapture;
-                const isHover = hoverSq === sq;
-                return (
-                  <button
-                    key={sq}
-                    type="button"
-                    role="gridcell"
-                    aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
-                    className={[
-                      'chess-board__sq',
-                      light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
-                      isSel ? 'chess-board__sq--selected' : '',
-                      isLegal ? 'chess-board__sq--legal' : '',
-                      isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
-                      isLegalCapture ? 'chess-board__sq--legal-capture' : '',
-                      isHover ? 'chess-board__sq--hover' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => onSquareClick(sq)}
-                    onMouseEnter={() => setHoverSq(sq)}
-                    onMouseLeave={() => setHoverSq(null)}
-                  >
-                    {p ? (
-                      <img
-                        className="chess-board__piece"
-                        src={pieceImageUrl(base, p, sq)}
-                        alt=""
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
+      <div className="chess-match__arena">
+        <aside
+          className="chess-match__graveyard chess-match__graveyard--white"
+          aria-label="Captured white pieces"
+        >
+          {capturePiles.whitePieces.map((p, i) => (
+            <div
+              key={`w-${i}-${p.type}`}
+              className="chess-match__grave-piece"
+              style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+            >
+              <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
             </div>
           ))}
+        </aside>
+
+        <div className="chess-match__board-wrap">
+          <div className="chess-board" role="grid" aria-label="Chess board">
+            {Array.from({ length: 8 }, (_, rankFromTop) => (
+              <div key={rankFromTop} className="chess-board__rank" role="row">
+                {Array.from({ length: 8 }, (_, file) => {
+                  const sq = visualToSquare(file, rankFromTop, humanColor);
+                  // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
+                  const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
+                  const p = game.board[sq];
+                  const isSel = selected === sq;
+                  const isLegal = legalDests.has(sq);
+                  const isLegalCapture = isLegal && p && p.color !== game.toMove;
+                  const isLegalQuiet = isLegal && !isLegalCapture;
+                  const isHover = hoverSq === sq;
+                  return (
+                    <button
+                      key={sq}
+                      type="button"
+                      role="gridcell"
+                      aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
+                      className={[
+                        'chess-board__sq',
+                        light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
+                        isSel ? 'chess-board__sq--selected' : '',
+                        isLegal ? 'chess-board__sq--legal' : '',
+                        isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
+                        isLegalCapture ? 'chess-board__sq--legal-capture' : '',
+                        isHover ? 'chess-board__sq--hover' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => onSquareClick(sq)}
+                      onMouseEnter={() => setHoverSq(sq)}
+                      onMouseLeave={() => setHoverSq(null)}
+                    >
+                      {p ? (
+                        <img
+                          className="chess-board__piece"
+                          src={pieceImageUrl(base, p, sq)}
+                          alt=""
+                          style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+                        />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          {banner ? (
+            <div className="chess-match__banner chess-match__banner--under-board" role="status">
+              {banner}
+            </div>
+          ) : null}
+          {training && selected !== null ? (
+            <div className="chess-match__explain-slot">
+              <p className="chess-match__explain">{hoverExplain}</p>
+            </div>
+          ) : null}
         </div>
-        {training && hoverExplain && selected !== null ? (
-          <p className="chess-match__explain">{hoverExplain}</p>
-        ) : null}
+
+        <aside
+          className="chess-match__graveyard chess-match__graveyard--black"
+          aria-label="Captured black pieces"
+        >
+          {capturePiles.blackPieces.map((p, i) => (
+            <div
+              key={`b-${i}-${p.type}`}
+              className="chess-match__grave-piece"
+              style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+            >
+              <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+            </div>
+          ))}
+        </aside>
       </div>
     </div>
   );

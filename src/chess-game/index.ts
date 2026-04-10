@@ -8,6 +8,7 @@ export { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './c
 export {
   applyMove,
   applyMoveUnchecked,
+  getCapturedPiece,
   isInCheck,
   legalMoves,
   legalMovesFrom,
@@ -25,7 +26,7 @@ export {
   type InstructionSection,
 } from './copy/instructions';
 
-export { pieceImagePath, pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
+export { pieceImagePath, pieceImageUrl, pieceTypeTogglePath, PIECE_HEIGHT_RATIO } from './pieceArt';
 
 export type { AiDifficulty } from './ai/search';
 export { chooseAiMove } from './ai/search';

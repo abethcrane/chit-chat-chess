@@ -394,3 +394,17 @@ export function moveWouldBeCapture(state: GameState, m: Move): boolean {
   if (p?.type === 'P' && m.to === state.epSquare) return true;
   return false;
 }
+
+/** Piece removed by the opponent when this move is played (null if none / castling). */
+export function getCapturedPiece(state: GameState, move: Move): Piece | null {
+  const piece = state.board[move.from];
+  if (!piece) return null;
+  if (isCastleMove(piece, move.from, move.to)) return null;
+  let captured = state.board[move.to];
+  if (piece.type === 'P' && move.to === state.epSquare && !captured) {
+    const dir = piece.color === 'w' ? -1 : 1;
+    const capSq = square(fileOf(move.to), rankOf(move.to) + dir);
+    return state.board[capSq];
+  }
+  return captured;
+}

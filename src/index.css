@@ -918,12 +918,88 @@ footer.site-footer p {
   box-shadow: 0 0 20px rgba(159, 211, 199, 0.35);
 }
 
+.chess-match__banner--under-board {
+  margin: 0.5rem 0 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* nowrap: a wrapped graveyard column becomes a full-width row above the board (tall dashed “tower” + jitter). */
+.chess-match__arena {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.5rem 0.65rem;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.chess-match__graveyard {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  width: min(12vw, 3.25rem);
+  padding: 0.35rem 0.2rem;
+  border-radius: 10px;
+  border: 2px dashed rgba(44, 44, 44, 0.2);
+  background: rgba(252, 248, 242, 0.94);
+  /* Match 8 board rows so the column height doesn’t pulse when captures appear. */
+  min-height: calc(8 * max(40px, min(11vw, 52px)));
+  box-sizing: border-box;
+  /* Stay visible when the arena scrolls horizontally or the page scrolls — never “lose” the piles beside the board. */
+  position: sticky;
+  top: 0.5rem;
+  z-index: 2;
+}
+
+.chess-match__graveyard--white {
+  order: 0;
+  left: 0;
+}
+
+.chess-match__graveyard--black {
+  order: 2;
+  right: 0;
+}
+
+.chess-match__grave-piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -42%;
+  width: 100%;
+  min-height: 0.5rem;
+}
+
+.chess-match__grave-piece:first-child {
+  margin-top: 0;
+}
+
+.chess-match__grave-piece img {
+  width: auto;
+  max-width: 100%;
+  height: calc(var(--ph, 1) * 1.85rem);
+  max-height: 2.35rem;
+  object-fit: contain;
+  object-position: center center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
 .chess-match__board-wrap {
+  order: 1;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
   align-items: center;
-  width: 100%;
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .chess-board {
@@ -1042,9 +1118,11 @@ footer.site-footer p {
 .chess-board__piece {
   position: relative;
   z-index: 2;
-  width: 82%;
-  height: 82%;
+  width: auto;
+  max-width: 88%;
+  height: calc(var(--ph, 1) * 78%);
   object-fit: contain;
+  object-position: center center;
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
@@ -1053,10 +1131,24 @@ footer.site-footer p {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)) brightness(0.38);
 }
 
+/* Fixed slot so hover copy changes don’t shift the board vertically. */
+.chess-match__explain-slot {
+  width: 100%;
+  max-width: min(42ch, 100%);
+  min-height: 4.6rem;
+  max-height: 6.75rem;
+  margin-inline: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .chess-match__explain {
   margin: 0;
-  max-width: min(42ch, 100%);
-  margin-inline: auto;
+  width: 100%;
   text-align: center;
   font-size: 0.88rem;
   color: var(--accent);

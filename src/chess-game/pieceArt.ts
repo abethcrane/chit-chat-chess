@@ -1,4 +1,14 @@
 import type { Piece, PieceType, Square } from './core/types';
+
+/** Visual height vs king (1.0) for Staunton-style proportions on the board. */
+export const PIECE_HEIGHT_RATIO: Record<PieceType, number> = {
+  K: 1,
+  Q: 0.88,
+  B: 0.77,
+  N: 0.73,
+  R: 0.63,
+  P: 0.53,
+};
 import { fileOf, square } from './core/types';
 
 const PREVIEW_SQ = square(0, 0);
