@@ -108,6 +108,9 @@ const AI_DIFFICULTY_LABEL: Record<AiDifficulty, string> = {
   hard: 'Hard',
 };
 
+/** Both-sides + Face seat: hold current board angle so the new position is visible, then spin toward the side to move. */
+const FACE_SEAT_SPIN_DELAY_MS = 300;
+
 export type ChessMatchProps = {
   enabledTypes?: Set<PieceType>;
   onEnabledTypesChange?: (next: Set<PieceType>) => void;
@@ -142,11 +145,88 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const bannerTimer = useRef<number | null>(null);
 
   const aiColor: Color = humanColor === 'w' ? 'b' : 'w';
-  /** Whose home rank is at the bottom. When rotation is off, fixed white toward the bottom (standard diagram). */
-  const boardFacing: Color = rotateBoardToSeat ? (vsAi ? humanColor : game.toMove) : 'w';
+  /** Where the seat should face (game state). With Face seat + both sides, the animated `boardFacing` trails this briefly after each move. */
+  const seatTargetFacing: Color = rotateBoardToSeat ? (vsAi ? humanColor : game.toMove) : 'w';
+
+  const [boardFacing, setBoardFacing] = useState<Color>('w');
+  const boardFacingRef = useRef(boardFacing);
+  boardFacingRef.current = boardFacing;
+
+  const faceSeatSpinTimerRef = useRef<number | null>(null);
+  const prevMoveLogLenRef = useRef(0);
+  const prevRotateSeatRef = useRef(rotateBoardToSeat);
+  const prevVsAiRef = useRef(vsAi);
+
+  useEffect(() => {
+    const clearFaceSeatTimer = () => {
+      if (faceSeatSpinTimerRef.current !== null) {
+        window.clearTimeout(faceSeatSpinTimerRef.current);
+        faceSeatSpinTimerRef.current = null;
+      }
+    };
+
+    const logLen = moveLog.length;
+    const prevLen = prevMoveLogLenRef.current;
+    const advanced = logLen > prevLen;
+    const tookBack = logLen < prevLen;
+
+    const rotateJustOn = rotateBoardToSeat && !prevRotateSeatRef.current;
+    const rotateJustOff = !rotateBoardToSeat && prevRotateSeatRef.current;
+    prevRotateSeatRef.current = rotateBoardToSeat;
+
+    const vsAiJustChanged = vsAi !== prevVsAiRef.current;
+    prevVsAiRef.current = vsAi;
+
+    try {
+      clearFaceSeatTimer();
+
+      if (rotateJustOff) {
+        setBoardFacing('w');
+        return;
+      }
+
+      if (!rotateBoardToSeat) {
+        return;
+      }
+
+      if (rotateJustOn || vsAiJustChanged) {
+        setBoardFacing(seatTargetFacing);
+        return;
+      }
+
+      if (vsAi) {
+        setBoardFacing(humanColor);
+        return;
+      }
+
+      if (tookBack) {
+        setBoardFacing(seatTargetFacing);
+        return;
+      }
+
+      if (advanced && seatTargetFacing !== boardFacingRef.current) {
+        faceSeatSpinTimerRef.current = window.setTimeout(() => {
+          faceSeatSpinTimerRef.current = null;
+          setBoardFacing(seatTargetFacing);
+        }, FACE_SEAT_SPIN_DELAY_MS);
+        return;
+      }
+
+      if (seatTargetFacing !== boardFacingRef.current) {
+        setBoardFacing(seatTargetFacing);
+      }
+    } finally {
+      prevMoveLogLenRef.current = logLen;
+    }
+
+    return clearFaceSeatTimer;
+  }, [rotateBoardToSeat, vsAi, humanColor, seatTargetFacing, moveLog.length]);
+
+  /** Whose home rank is at the bottom for the spin animation. When rotation is off, fixed white toward the bottom (standard diagram). */
+  const boardFacingForSpin: Color = rotateBoardToSeat ? boardFacing : 'w';
 
   /** Counter-rotate all sprites together after board spin: 0 while spinning to Black, 180 while spinning to White, then snap to upright. */
-  const [pieceSpinDeg, setPieceSpinDeg] = useState<0 | 180>(() => (boardFacing === 'b' ? 180 : 0));
+  const [pieceSpinDeg, setPieceSpinDeg] = useState<0 | 180>(0);
   const pieceSpinDegRef = useRef(pieceSpinDeg);
   pieceSpinDegRef.current = pieceSpinDeg;
 
@@ -156,13 +236,13 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   useLayoutEffect(() => {
     const el = boardFacingAnimRef.current;
     if (!el) return;
-    const target = boardFacing === 'b' ? 180 : 0;
+    const target = boardFacingForSpin === 'b' ? 180 : 0;
 
     if (isFirstBoardFacingLayoutRef.current) {
       isFirstBoardFacingLayoutRef.current = false;
       boardAngleRef.current = target;
       el.style.transform = `rotateZ(${target}deg)`;
-      setPieceSpinDeg(boardFacing === 'b' ? 180 : 0);
+      setPieceSpinDeg(boardFacingForSpin === 'b' ? 180 : 0);
       return;
     }
 
@@ -179,7 +259,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       prevAngle = target === 180 ? 0 : 180;
     }
 
-    const snapPieces = () => setPieceSpinDeg(boardFacing === 'b' ? 180 : 0);
+    const snapPieces = () => setPieceSpinDeg(boardFacingForSpin === 'b' ? 180 : 0);
 
     const reduced =
       typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -202,7 +282,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       boardAngleRef.current = target;
       snapPieces();
     };
-  }, [boardFacing]);
+  }, [boardFacingForSpin]);
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
@@ -579,7 +659,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 aria-pressed={vsAi}
                 onClick={() => setVsAi(true)}
               >
-                Vs computer
+                vs computer
               </button>
               <button
                 type="button"
@@ -594,7 +674,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               <div className="chess-match__panel-fields">
                 <div>
                   <p className="chess-match__micro-label" id="seat-label">
-                    Your seat
+                    You play
                   </p>
                   <div className="chess-match__seg chess-match__seg--seat" role="group" aria-labelledby="seat-label">
                     <button
@@ -603,7 +683,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                       aria-pressed={humanColor === 'w'}
                       onClick={() => setHumanColor('w')}
                     >
-                      Light side
+                      White
                     </button>
                     <button
                       type="button"
@@ -611,7 +691,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                       aria-pressed={humanColor === 'b'}
                       onClick={() => setHumanColor('b')}
                     >
-                      Dark side
+                      Black
                     </button>
                   </div>
                 </div>

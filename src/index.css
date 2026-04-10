@@ -1280,8 +1280,22 @@ footer.site-footer p {
   margin-inline: calc(-1 * var(--chess-perspective-pad-x));
 }
 
-.chess-match__board-cluster .chess-board {
+.chess-match__board-cluster .chess-board-spin-clip {
   flex: 0 0 auto;
+}
+
+/* Fixed footprint: rotateZ in-plane widens the axis-aligned bounds (~√2 at 45°) and was triggering
+   .chess-match__arena overflow-x scrollbars; clip paint without changing layout width.
+   Shadow lives on this shell so it isn’t clipped with the spinning grid. */
+.chess-board-spin-clip {
+  width: var(--chess-board-w);
+  height: var(--chess-board-w);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.2);
 }
 
 .chess-match__graveyard {
@@ -1546,7 +1560,7 @@ footer.site-footer p {
     justify-self: center;
   }
 
-  .chess-match__board-cluster .chess-board {
+  .chess-match__board-cluster .chess-board-spin-clip {
     grid-column: 1 / -1;
     grid-row: 1;
     justify-self: center;
@@ -1670,9 +1684,6 @@ footer.site-footer p {
   border: 4px solid var(--board-edge);
   border-radius: 4px;
   overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.35),
-    0 12px 32px rgba(0, 0, 0, 0.2);
   transform-origin: center center;
 }
 
