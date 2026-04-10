@@ -1,5 +1,6 @@
 {
   "files": [
+    "alice-john-tenniel/alice-adjusting-pawns.jpg",
     "alice-john-tenniel/alice-awake-queens-bw.jpg",
     "alice-john-tenniel/alice-awake-queens-color.png",
     "alice-john-tenniel/alice-chessboard.jpg",
@@ -11,6 +12,7 @@
     "alice-john-tenniel/alice-sleeping-queens-bw-alternative.jpg",
     "alice-john-tenniel/alice-sleeping-queens-bw.png",
     "alice-john-tenniel/alice-sleeping-queens.webp",
+    "alice-john-tenniel/alice-table-cloth-color.webp",
     "alice-john-tenniel/alice-white-king-captured.jpg",
     "alice-john-tenniel/alice-white-knight.jpg",
     "alice-john-tenniel/chessboard-recolorized-w-gemini.png",
@@ -49,6 +51,56 @@
     "women-in-parlour.png"
   ],
   "attributions": {
+    "alice-john-tenniel/chessboard-recolorized-w-gemini.png": {
+      "credit": "John Tenniel, illustrations for Through the Looking-Glass (1871); wood engraving, digitally colorized for this site (Gemini) from B&W",
+      "sourceLabel": "Wikimedia Commons — Tenniel, Looking-Glass",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/Category:Illustrations_by_John_Tenniel_for_Through_the_Looking-Glass"
+    },
+    "alice-john-tenniel/chessboard-through-the-looking-glass-john-tenniel.jpg": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); chessboard landscape (line / wood engraving)",
+      "sourceLabel": "Fine Art America",
+      "sourceUrl": "https://fineartamerica.com/featured/chessboard-through-the-looking-glass-john-tenniel.html"
+    },
+    "alice-john-tenniel/alice-sleeping-queens-bw.png": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); wood engraving (Dalziel brothers)",
+      "sourceLabel": "Goldmark — In Focus: Tenniel & Alice wood engravings",
+      "sourceUrl": "https://www.goldmarkart.com/blogs/discover/sir-john-tenniel-alice-wood-engravings"
+    },
+    "alice-john-tenniel/alice-red-queen-run2.jpg": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); color reproduction",
+      "sourceLabel": "University of Notre Dame (hosted file)",
+      "sourceUrl": "https://sites.nd.edu/julia-nebiolo/files/2019/11/71KY1BYCOYL._SX425_.jpg"
+    },
+    "alice-john-tenniel/alice-awake-queens-bw.jpg": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); wood engraving (Dalziel brothers)",
+      "sourceLabel": "The Guardian — Dalziel brothers gallery",
+      "sourceUrl": "https://www.theguardian.com/books/gallery/2016/nov/26/alice-in-wonderlands-engravings-a-forgotten-story-dalziel-brothers-in-pictures"
+    },
+    "alice-john-tenniel/alice-awake-queens-color.png": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); color reproduction",
+      "sourceLabel": "Alamy",
+      "sourceUrl": "https://www.alamy.com/through-the-looking-glass-and-what-alice-found-there-1871-is-a-novel-by-lewis-carroll-the-white-queen-lives-backwards-in-time-due-to-the-fact-tha-image610250529.html"
+    },
+    "alice-john-tenniel/alice-white-knight.jpg": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871)",
+      "sourceLabel": "Fine Art America",
+      "sourceUrl": "https://fineartamerica.com/featured/the-white-knight-alices-adventures-in-wonderland-and-through-the-looking-glass-and-what-alice-found-there-john-tenniel.html"
+    },
+    "alice-john-tenniel/alice-adjusting-pawns.jpg": {
+      "credit": "John Tenniel, Through the Looking-Glass (1871); wood engraving (Dalziel brothers)",
+      "sourceLabel": "The Guardian — Dalziel brothers gallery",
+      "sourceUrl": "https://www.theguardian.com/books/gallery/2016/nov/26/alice-in-wonderlands-engravings-a-forgotten-story-dalziel-brothers-in-pictures"
+    },
+    "alice-john-tenniel/alice-red-king-queen-converse-2.jpg": {
+      "credit": "After John Tenniel; magic lantern slide (glass), c. 1900, Newton & Co.",
+      "sourceLabel": "V&A Images",
+      "sourceUrl": "https://www.vandaimages.com/2010EG9476-The-Red-King-Red-Queen-and-other-Chess-pieces.html"
+    },
+    "alice-john-tenniel/alice-table-cloth-color.webp": {
+      "credit": "John Tenniel (vintage book illustration)",
+      "sourceLabel": "Etsy",
+      "sourceUrl": "https://www.etsy.com/listing/1706298601/alice-in-wonderland-vintage-print-john"
+    },
     "women-in-parlour.png": {
       "credit": "Alexis Fay, c. 1860",
       "sourceLabel": "Getty Museum",

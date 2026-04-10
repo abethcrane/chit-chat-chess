@@ -35,8 +35,10 @@ export function App() {
           <p className="section-lede">
             Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).
             </p>
-            <p>The board turns so that your seat (color) is always at the bottom.
-          </p>
+            <p>
+              Optional: turn on <strong>Face seat</strong> next to Undo so the board spins toward your color (vs
+              computer) or the side to move (both players).
+            </p>
           <ChessMatch enabledTypes={enabledPieceTypes} onEnabledTypesChange={setEnabledPieceTypes} />
         </section>
         <section className="panel panel--rose" aria-labelledby="playfield-heading">

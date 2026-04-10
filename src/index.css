@@ -844,6 +844,11 @@ footer.site-footer p {
 /* —— Chess match (teaching + play) —— */
 .chess-match {
   margin-top: 0.5rem;
+  min-width: 0;
+  /* Keep in sync with .chess-board-perspective top padding and .chess-match__board-bar / __board-only gap. */
+  --chess-perspective-pad-top: clamp(6px, 2.5vw, 28px);
+  --chess-board-bar-min-h: 2.2rem;
+  --chess-board-only-gap: 0.35rem;
 }
 
 .chess-match__toolbar {
@@ -1157,11 +1162,6 @@ footer.site-footer p {
   margin-top: -0.05rem;
 }
 
-.chess-match__ai-thinking {
-  font-style: italic;
-  color: rgba(139, 74, 92, 0.92);
-}
-
 .chess-match__inline {
   display: inline-flex;
   align-items: center;
@@ -1206,12 +1206,6 @@ footer.site-footer p {
   font-size: 0.82rem;
 }
 
-.chess-match__status {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--ink);
-}
-
 .chess-match__banner {
   margin: 0 0 0.65rem;
   padding: 0.55rem 0.75rem;
@@ -1229,17 +1223,25 @@ footer.site-footer p {
 }
 
 /* nowrap: a wrapped graveyard column becomes a full-width row above the board (tall dashed “tower” + jitter). */
-/* flex-end: center column includes Undo above the grid — align bottoms so graveyards line up with the board, not the bar. */
+/* flex-start: center column grew (Undo bar + rotateZ clip padding). flex-end pinned graveyard bottoms to that tall box and visually dropped the piles. */
 .chess-match__arena {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   justify-content: center;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.5rem 0.65rem;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   overscroll-behavior-x: contain;
+}
+
+/* Desktop: band is transparent in the flex layout so White | Board | Black order still works. */
+.chess-match__graveyard-band {
+  display: contents;
 }
 
 .chess-match__graveyard {
@@ -1257,6 +1259,10 @@ footer.site-footer p {
   /* Match 8 board rows so the column height doesn’t pulse when captures appear. */
   min-height: calc(8 * max(40px, min(11vw, 52px)));
   box-sizing: border-box;
+  /* Line up with the .chess-board grid top (skip Undo row + gap + perspective padding). */
+  margin-top: calc(
+    var(--chess-board-bar-min-h) + var(--chess-board-only-gap) + var(--chess-perspective-pad-top)
+  );
   /* Stay visible when the arena scrolls horizontally or the page scrolls — never “lose” the piles beside the board. */
   position: sticky;
   top: 0.5rem;
@@ -1327,31 +1333,200 @@ footer.site-footer p {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.35rem;
+  gap: var(--chess-board-only-gap);
   width: max-content;
   max-width: 100%;
 }
 
 .chess-match__board-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  flex-wrap: wrap;
   width: 100%;
-  min-height: 1.75rem;
+  min-height: var(--chess-board-bar-min-h);
+}
+
+.chess-match__board-bar-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
   align-items: center;
 }
 
-/* Narrow viewports: board full width, both graveyards in one band below (no horizontal squeeze). */
+.chess-match__board-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* Link-adjacent pill: whose turn + soft split color (side vs rest). */
+.chess-match__turn-callout {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.08em 0.2em;
+  max-width: min(22rem, 72vw);
+  padding: 0.28rem 0.7rem 0.34rem;
+  border-radius: 999px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.88), rgba(255, 245, 250, 0.5));
+  border: 1.5px solid rgba(139, 74, 92, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 2px 14px rgba(155, 188, 255, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.28;
+  color: var(--ink);
+}
+
+.chess-match__turn-callout-side {
+  font-weight: 800;
+  font-size: 1.05em;
+  letter-spacing: 0.04em;
+}
+
+.chess-match__turn-callout-side--w {
+  color: #245a8a;
+  text-shadow: 0 0 14px rgba(155, 188, 255, 0.75);
+}
+
+.chess-match__turn-callout-side--b {
+  color: #5a2f68;
+  text-shadow: 0 0 14px rgba(186, 160, 210, 0.55);
+}
+
+.chess-match__turn-callout-rest {
+  font-weight: 600;
+  color: rgba(183, 110, 121, 0.95);
+}
+
+.chess-match__turn-callout--thinking {
+  flex-direction: row;
+  align-items: center;
+}
+
+.chess-match__turn-callout-kicker {
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(139, 74, 92, 0.88);
+}
+
+.chess-match__turn-callout-sep {
+  color: rgba(139, 74, 92, 0.45);
+  font-weight: 700;
+}
+
+.chess-match__turn-callout-ai {
+  font-style: italic;
+  font-weight: 600;
+  color: rgba(55, 85, 160, 0.9);
+}
+
+.chess-match__turn-callout--terminal {
+  background: linear-gradient(165deg, rgba(255, 252, 248, 0.92), rgba(232, 245, 240, 0.55));
+  border-color: rgba(159, 211, 199, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 2px 14px rgba(159, 211, 199, 0.35);
+}
+
+.chess-match__turn-callout-terminal {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.chess-match__rotate-board {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  cursor: var(--cursor-pointer, pointer);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  user-select: none;
+}
+
+.chess-match__rotate-board:has(input:focus-visible) .chess-match__rotate-board-track {
+  outline: 2px solid var(--rose-deep);
+  outline-offset: 2px;
+}
+
+.chess-match__rotate-board-track {
+  position: relative;
+  width: 2rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(44, 44, 44, 0.12);
+  transition: background 0.15s ease;
+}
+
+.chess-match__rotate-board-track::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 0.82rem;
+  height: 0.82rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transform: translateY(-50%);
+  transition: transform 0.18s cubic-bezier(0.45, 0.05, 0.25, 1);
+}
+
+.chess-match__rotate-board input:checked + .chess-match__rotate-board-track {
+  background: rgba(139, 74, 92, 0.38);
+}
+
+.chess-match__rotate-board input:checked + .chess-match__rotate-board-track::after {
+  transform: translate(calc(2rem - 0.82rem - 4px), -50%);
+}
+
+.chess-match__rotate-board-text {
+  white-space: nowrap;
+}
+
+/* Narrow viewports: board centered; capture band matches board width and grows taller as pieces wrap. */
 @media (max-width: 639px) {
   .chess-match__arena {
+    --chess-sq: max(40px, min(11vw, 52px));
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    align-items: stretch;
+    align-items: start;
     justify-items: stretch;
     column-gap: 0;
     row-gap: 0.35rem;
     overflow-x: visible;
     overscroll-behavior-x: auto;
+  }
+
+  .chess-match__graveyard-band {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    box-sizing: border-box;
+    width: min(100%, calc(8 * var(--chess-sq)));
+    max-width: 100%;
+    min-width: 0;
+    justify-self: center;
+    align-self: start;
   }
 
   .chess-match__graveyards-angel {
@@ -1376,37 +1551,38 @@ footer.site-footer p {
 
   .chess-match__graveyard {
     position: static;
-    width: 100%;
+    flex: 1 1 50%;
+    width: auto;
     min-width: 0;
+    max-width: 100%;
+    height: auto;
     min-height: 2.75rem;
+    margin-top: 0;
     padding: 0.35rem 0.3rem;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    align-content: center;
+    align-items: flex-start;
+    align-content: flex-start;
   }
 
   .chess-match__grave-pile {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    align-content: center;
-    flex: 1 1 auto;
+    align-items: flex-start;
+    align-content: flex-start;
+    flex: 0 1 auto;
     min-width: 0;
+    width: 100%;
   }
 
   .chess-match__graveyard--white {
-    grid-column: 1;
-    grid-row: 3;
     border-radius: 10px 0 0 10px;
     border-right: 1px solid rgba(44, 44, 44, 0.2);
   }
 
   .chess-match__graveyard--black {
-    grid-column: 2;
-    grid-row: 3;
     border-radius: 0 10px 10px 0;
     border-left: none;
   }
@@ -1444,7 +1620,7 @@ footer.site-footer p {
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
-  padding: clamp(6px, 2.5vw, 28px) clamp(8px, 3.5vw, 40px) 2.75rem;
+  padding: var(--chess-perspective-pad-top) clamp(8px, 3.5vw, 40px) 2.75rem;
 }
 
 .chess-board {

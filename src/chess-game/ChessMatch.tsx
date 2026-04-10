@@ -52,6 +52,10 @@ function cellToSquare(file: number, rankFromTop: number): Square {
   return square(file, 7 - rankFromTop);
 }
 
+function sideLabel(c: Color): string {
+  return c === 'w' ? 'White' : 'Black';
+}
+
 /** Current rotateZ in degrees from getComputedStyle, or null if none. */
 function readRotateZDeg(el: HTMLElement): number | null {
   const t = getComputedStyle(el).transform;
@@ -118,6 +122,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const [humanColor, setHumanColor] = useState<Color>(() => (Math.random() < 0.5 ? 'w' : 'b'));
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [training, setTraining] = useState(true);
+  const [rotateBoardToSeat, setRotateBoardToSeat] = useState(false);
   const [start, setStart] = useState<GameState>(() => {
     const s = new Set(ALL_PIECE_TYPES);
     return createGame(s);
@@ -134,8 +139,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const bannerTimer = useRef<number | null>(null);
 
   const aiColor: Color = humanColor === 'w' ? 'b' : 'w';
-  /** Whose home rank is at the bottom. Both-sides: side to move (rotates each turn). Vs computer: your seat. */
-  const boardFacing: Color = vsAi ? humanColor : game.toMove;
+  /** Whose home rank is at the bottom. When rotation is off, fixed white toward the bottom (standard diagram). */
+  const boardFacing: Color = rotateBoardToSeat ? (vsAi ? humanColor : game.toMove) : 'w';
 
   /** Counter-rotate all sprites together after board spin: 0 while spinning to Black, 180 while spinning to White, then snap to upright. */
   const [pieceSpinDeg, setPieceSpinDeg] = useState<0 | 180>(() => (boardFacing === 'b' ? 180 : 0));
@@ -412,18 +417,64 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const difficultyIndex = AI_DIFFICULTY_ORDER.indexOf(aiDifficulty);
 
-  const sideName = (c: Color) => (c === 'w' ? 'White' : 'Black');
+  const turnCallout = useMemo(() => {
+    const announcePlaying =
+      vsAi && game.toMove === humanColor
+        ? `Your move (${sideLabel(humanColor)})`
+        : `${sideLabel(game.toMove)} to move`;
 
-  const turnLabel =
-    outcome.phase === 'playing'
-      ? vsAi && game.toMove === humanColor
-        ? `Your move (${sideName(humanColor)})`
-        : `${sideName(game.toMove)} to move`
-      : outcome.phase === 'checkmate'
+    if (aiThinking) {
+      return (
+        <div
+          className="chess-match__turn-callout chess-match__turn-callout--thinking"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label={`Computer: ${AI_THINKING_LINES[thinkingLineIx]}`}
+        >
+          <span className="chess-match__turn-callout-kicker">Computer</span>
+          <span className="chess-match__turn-callout-sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="chess-match__turn-callout-ai">{AI_THINKING_LINES[thinkingLineIx]}</span>
+        </div>
+      );
+    }
+    if (outcome.phase === 'playing') {
+      if (vsAi && game.toMove === humanColor) {
+        const c = humanColor;
+        return (
+          <div className="chess-match__turn-callout" role="status" aria-live="polite" aria-label={announcePlaying}>
+            <span className={`chess-match__turn-callout-side chess-match__turn-callout-side--${c}`}>{sideLabel(c)}</span>
+            <span className="chess-match__turn-callout-rest"> — your move</span>
+          </div>
+        );
+      }
+      const m = game.toMove;
+      return (
+        <div className="chess-match__turn-callout" role="status" aria-live="polite" aria-label={announcePlaying}>
+          <span className={`chess-match__turn-callout-side chess-match__turn-callout-side--${m}`}>{sideLabel(m)}</span>
+          <span className="chess-match__turn-callout-rest"> to move</span>
+        </div>
+      );
+    }
+    const end =
+      outcome.phase === 'checkmate'
         ? 'Checkmate'
         : outcome.phase === 'stalemate'
           ? 'Stalemate'
           : 'Draw';
+    return (
+      <div
+        className="chess-match__turn-callout chess-match__turn-callout--terminal"
+        role="status"
+        aria-live="polite"
+        aria-label={end}
+      >
+        <span className="chess-match__turn-callout-terminal">{end}</span>
+      </div>
+    );
+  }, [aiThinking, thinkingLineIx, outcome.phase, vsAi, game.toMove, humanColor]);
 
   return (
     <div className="chess-match">
@@ -578,15 +629,6 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
             </p>
           </div>
         </div>
-        <p className="chess-match__status">
-          {aiThinking ? (
-            <span className="chess-match__ai-thinking" role="status" aria-live="polite" aria-atomic="true">
-              Computer: {AI_THINKING_LINES[thinkingLineIx]}
-            </span>
-          ) : (
-            turnLabel
-          )}
-        </p>
       </div>
 
       <div className="chess-match__arena">
@@ -594,31 +636,25 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           😇
         </div>
 
-        <aside
-          className="chess-match__graveyard chess-match__graveyard--white"
-          aria-label="Captured white pieces"
-        >
-          <span className="chess-match__graveyard-angel" aria-hidden="true">
-            😇
-          </span>
-          <div className="chess-match__grave-pile">
-            {capturePiles.whitePieces.map((p, i) => (
-              <div
-                key={`w-${i}-${p.type}`}
-                className="chess-match__grave-piece"
-                style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-              >
-                <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-              </div>
-            ))}
-          </div>
-        </aside>
-
         <div className="chess-match__board-only">
           <div className="chess-match__board-bar">
-            <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
-              Undo
-            </button>
+            <div className="chess-match__board-bar-left">{turnCallout}</div>
+            <div className="chess-match__board-bar-right">
+              <label className="chess-match__rotate-board" htmlFor="chess-rotate-board">
+                <input
+                  id="chess-rotate-board"
+                  type="checkbox"
+                  className="sr-only"
+                  checked={rotateBoardToSeat}
+                  onChange={(e) => setRotateBoardToSeat(e.target.checked)}
+                />
+                <span className="chess-match__rotate-board-track" aria-hidden="true" />
+                <span className="chess-match__rotate-board-text">Face seat</span>
+              </label>
+              <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
+                Undo
+              </button>
+            </div>
           </div>
           <div className="chess-board-perspective">
             <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
@@ -676,25 +712,47 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           </div>
         </div>
 
-        <aside
-          className="chess-match__graveyard chess-match__graveyard--black"
-          aria-label="Captured black pieces"
-        >
-          <span className="chess-match__graveyard-angel" aria-hidden="true">
-            😇
-          </span>
-          <div className="chess-match__grave-pile">
-            {capturePiles.blackPieces.map((p, i) => (
-              <div
-                key={`b-${i}-${p.type}`}
-                className="chess-match__grave-piece"
-                style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-              >
-                <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-              </div>
-            ))}
-          </div>
-        </aside>
+        <div className="chess-match__graveyard-band">
+          <aside
+            className="chess-match__graveyard chess-match__graveyard--white"
+            aria-label="Captured white pieces"
+          >
+            <span className="chess-match__graveyard-angel" aria-hidden="true">
+              😇
+            </span>
+            <div className="chess-match__grave-pile">
+              {capturePiles.whitePieces.map((p, i) => (
+                <div
+                  key={`w-${i}-${p.type}`}
+                  className="chess-match__grave-piece"
+                  style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+                >
+                  <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          <aside
+            className="chess-match__graveyard chess-match__graveyard--black"
+            aria-label="Captured black pieces"
+          >
+            <span className="chess-match__graveyard-angel" aria-hidden="true">
+              😇
+            </span>
+            <div className="chess-match__grave-pile">
+              {capturePiles.blackPieces.map((p, i) => (
+                <div
+                  key={`b-${i}-${p.type}`}
+                  className="chess-match__grave-piece"
+                  style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+                >
+                  <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
       </div>
 
       {banner || (training && selected !== null) ? (
