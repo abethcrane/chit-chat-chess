@@ -13,35 +13,47 @@ After the first successful deploy, GitHub shows a default URL like `https://<use
 
 ## Custom domain (recommended)
 
+Production URL: **`https://chitchatchess.club`** (apex domain).
+
 GitHub’s guide: [Managing a custom domain for your GitHub Pages site](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
 
 ### 1. Add a `CNAME` file to the built site
 
-Vite copies everything from [`public/`](public/) into `dist/`. Put your hostname in **`public/CNAME`** (one line, no `https://`, no trailing slash):
+Vite copies everything from [`public/`](public/) into `dist/`. This repo includes **`public/CNAME`** with the hostname (one line, no `https://`, no trailing slash):
 
 ```txt
-www.example.com
+chitchatchess.club
 ```
 
-Use either `www.example.com` or the apex `example.com`, depending on what you want in the browser bar. Commit and push this file.
-
-There is a [`public/CNAME.example`](public/CNAME.example) you can copy:
-
-```bash
-cp public/CNAME.example public/CNAME
-# edit public/CNAME to your real hostname
-```
+If you ever need to recreate it, copy [`public/CNAME.example`](public/CNAME.example) or create `public/CNAME` manually and commit.
 
 ### 2. Tell GitHub the domain
 
-**Settings → Pages → Custom domain** — enter the same hostname (`www.example.com` or `example.com`). Save. Enable **Enforce HTTPS** once DNS and certificates are ready.
+**Settings → Pages → Custom domain** — enter **`chitchatchess.club`**. Save. Enable **Enforce HTTPS** once DNS and certificates are ready.
 
 ### 3. DNS at your registrar
 
-- **Subdomain** (e.g. `www.example.com`): create a **CNAME** record pointing to **`<user>.github.io`** (GitHub shows the exact target in the Pages settings).
-- **Apex** (`example.com`): use GitHub’s current **A** records from [their docs](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain) (they can change; always verify there).
+This site uses the **apex** `chitchatchess.club`, so use GitHub’s current **A** (and **AAAA** if listed) records from [their docs](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain) (they can change; always verify there). GitHub Pages settings also shows what they expect.
+
+If you prefer **`www.chitchatchess.club`** instead, put that hostname in `public/CNAME` and GitHub’s custom domain field, then add a **CNAME** for `www` pointing to **`<user>.github.io`** (exact target appears in Pages settings).
 
 Propagation can take a few minutes to 48 hours.
+
+### Troubleshooting: `www.chitchatchess.club` / InvalidDNSError
+
+GitHub still checks **`www`** even when the canonical site is the **apex** (`chitchatchess.club`). If **`www` has no DNS records**, Pages shows *“www.chitchatchess.club is improperly configured”* / *InvalidDNSError*.
+
+**Fix (recommended):** At your registrar (nameservers point to DreamHost), add a **`www`** record:
+
+| Type  | Name / Host | Target / Value        |
+| ----- | ----------- | --------------------- |
+| CNAME | `www`       | `<your-github-user>.github.io` |
+
+Use the **same** `<user>.github.io` target GitHub shows under **Settings → Pages** for your site (no `https://`, no path). Do **not** change `public/CNAME` or the Pages “Custom domain” field if you want the main URL to stay **`chitchatchess.club`** — only add this `www` CNAME so GitHub’s check passes and `https://www.chitchatchess.club` resolves.
+
+**Verify:** `dig +short www.chitchatchess.club CNAME` should print `<user>.github.io.` after propagation.
+
+**Alternative:** If you do not want `www` at all, set **Custom domain** to **`chitchatchess.club`** only (not `www.…`) and remove any duplicate `www` entry; some UIs still expect a `www` CNAME for HTTPS/certificate flows, so adding the CNAME above is usually simpler.
 
 ### 4. Vite `base` URL
 
