@@ -634,15 +634,26 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               </label>
             );
           })}
+          <div className="chess-match__reset-slot">
+            <button
+              type="button"
+              className="chess-match__btn chess-match__btn--ghost chess-match__btn--reset-inline"
+              onClick={() => beginNewGame()}
+              aria-label="Reset board"
+            >
+              Reset
+              <span className="chess-match__reset-slot-sub" aria-hidden="true">
+                board
+              </span>
+            </button>
+          </div>
         </div>
-        <p className="chess-match__toggle-note">
-          Tip: turning a piece type on or off starts a <strong>fresh board</strong> (same seat; moves cleared).
+        <p
+          className="chess-match__toggle-note"
+          title="Toggling a piece type starts a fresh board; your seat stays the same and move history clears."
+        >
+          Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).
         </p>
-        <div className="chess-match__toolbar-reset">
-          <button type="button" className="chess-match__btn chess-match__btn--ghost" onClick={() => beginNewGame()}>
-            Reset board
-          </button>
-        </div>
         <div className="chess-match__controls">
           <div className="chess-match__control-panel">
             <p className="chess-match__panel-label" id="opponent-label">
@@ -724,7 +735,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 </div>
               </div>
             ) : (
-              <p className="chess-match__panel-hint">Move for White and Black — hot-seat style.</p>
+              <></>
             )}
           </div>
 
@@ -739,7 +750,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 aria-pressed={training}
                 onClick={() => setTraining(true)}
               >
-                Coach mode
+                On
               </button>
               <button
                 type="button"
@@ -747,12 +758,9 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 aria-pressed={!training}
                 onClick={() => setTraining(false)}
               >
-                Zen
+                Off
               </button>
             </div>
-            <p className="chess-match__panel-hint chess-match__panel-hint--tight">
-              {training ? 'Highlights legal moves & hover tips.' : 'No move glow — just the pieces.'}
-            </p>
           </div>
         </div>
       </div>

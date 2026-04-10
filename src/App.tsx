@@ -32,9 +32,6 @@ export function App() {
           <h2 id="learn-heading" className="section-title">
             Let's learn the game!
           </h2>
-          <p className="section-lede">
-            Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).
-            </p>
           <ChessMatch enabledTypes={enabledPieceTypes} onEnabledTypesChange={setEnabledPieceTypes} />
         </section>
         <section className="panel panel--rose" aria-labelledby="playfield-heading">

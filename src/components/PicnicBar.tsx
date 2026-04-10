@@ -3,6 +3,7 @@ import { useState } from 'react';
 const DRINKS = [
   { id: 'wine', label: 'wine', emoji: '🍷' },
   { id: 'tea', label: 'tea', emoji: '🫖' },
+  { id: 'coffee', label: 'coffee', emoji: '☕️' },
   { id: 'sparkling', label: 'sparkly', emoji: '🥂' },
   { id: 'juice', label: 'juice', emoji: '🧃' },
 ] as const;

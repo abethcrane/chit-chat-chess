@@ -886,10 +886,10 @@ footer.site-footer p {
 }
 
 .chess-match__toggle-note {
-  margin: 0.15rem 0 0;
+  margin: 0.1rem 0 0;
   text-align: center;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.72rem;
+  line-height: 1.35;
   color: var(--ink);
   opacity: 0.78;
   max-width: 36rem;
@@ -901,10 +901,37 @@ footer.site-footer p {
   opacity: 0.95;
 }
 
-.chess-match__toolbar-reset {
+.chess-match__reset-slot {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin: -0.15rem 0 0.1rem;
+  align-self: stretch;
+}
+
+.chess-match__btn--reset-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.08rem;
+  min-width: 3.25rem;
+  min-height: calc(48px + 0.55rem + 0.52rem);
+  padding: 0.35rem 0.4rem 0.28rem;
+  border-radius: 12px;
+  border-width: 3px;
+  font-family: Literata, Georgia, serif;
+  font-weight: 700;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  box-shadow: none;
+}
+
+.chess-match__reset-slot-sub {
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  opacity: 0.88;
 }
 
 .chess-match__piece-toggle {
@@ -1039,6 +1066,8 @@ footer.site-footer p {
 
 .chess-match__panel-hint--tight {
   margin-top: -0.1rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .chess-match__panel-fields {

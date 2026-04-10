@@ -50,7 +50,7 @@ export function RulesPlayfield({ instructionSections }: RulesPlayfieldProps) {
       <p className="sr-only">{plainSr}</p>
       <div className="instruction-sheet instruction-sheet--solo">
         <InstructionBody sections={instructionSections} baseUrl={baseUrl} />
-        <p>There are "points" next to each piece - this is to help you think about if losing a piece to take another piece is a good idea. One of many things you can consider or choose to ignore.</p>
+        <p className="chess-match__toggle-note" >There are "points" next to each piece - this is to help you think about if losing a piece to take another piece is a good idea. One of many things you can consider or choose to ignore.</p>
       </div>
     </div>
   );
