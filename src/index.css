@@ -358,6 +358,11 @@ a:hover {
   max-width: none;
 }
 
+.panel--note .prose {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
 .panel {
   position: relative;
 }
