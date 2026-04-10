@@ -6,7 +6,7 @@ import { PicnicBar } from './components/PicnicBar';
 import { RulesPlayfield } from './components/RulesPlayfield';
 import { SiteBanner } from './components/SiteBanner';
 import { SiteFooter } from './components/SiteFooter.tsx';
-import { PageBoardDancers } from './components/PageBoardDancers';
+import { DancingPieceFrame } from './components/DancingPieceFrame';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
@@ -25,9 +25,7 @@ export function App() {
   return (
     <div className="shell" style={shellStyle}>
       <SiteBanner />
-      <div className="page page--board">
-        <PageBoardDancers />
-        <div className="page--board__inner">
+      <DancingPieceFrame className="page page--board">
         <Hero />
         <HouseRules />
         <PicnicBar />
@@ -54,8 +52,7 @@ export function App() {
           <p>We’re still setting up the table. Check back soon!</p>
         </section>
         <SiteFooter />
-        </div>
-      </div>
+      </DancingPieceFrame>
     </div>
   );
 }

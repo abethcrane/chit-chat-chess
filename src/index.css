@@ -197,21 +197,6 @@ a:hover {
   position: relative;
 }
 
-.page--board__inner {
-  position: relative;
-  z-index: 3;
-}
-
-.page--board::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 1px dashed rgba(183, 110, 121, 0.28);
-  pointer-events: none;
-  border-radius: 1px;
-  z-index: 0;
-}
-
 /* Little pastel sparkles behind the main card */
 .page--board::after {
   content: "";
@@ -228,68 +213,81 @@ a:hover {
   opacity: 0.7;
 }
 
-/* Tiny pieces waltzing around the card edge (under sparkles, over dashed frame) */
-.page--board__dancers {
+/* Reusable animated “border” of chess pieces (see DancingPieceFrame.tsx) */
+.dancing-piece-frame {
+  --dancing-pad: 0.35rem;
+  --dancing-rail: 1.1rem;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.dancing-piece-frame__content {
+  position: relative;
+  z-index: 3;
+}
+
+.dancing-piece-frame__dancers {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   border-radius: inherit;
-  /* Ensure we track the full card even as the first (out-of-flow) child */
-  min-height: 100%;
   box-sizing: border-box;
 }
 
-.page--board__dancers-edge {
+.dancing-piece-frame__edge {
   position: absolute;
-  display: flex;
+  box-sizing: border-box;
+}
+
+/* Top/bottom only between side rails — no double piece at corners */
+.dancing-piece-frame__edge--top,
+.dancing-piece-frame__edge--bottom {
+  display: grid;
+  grid-template-columns: repeat(var(--piece-cols, 16), minmax(0, 1fr));
+  justify-items: center;
   align-items: center;
+  top: var(--dancing-pad);
+  bottom: auto;
+  left: calc(var(--dancing-pad) + var(--dancing-rail));
+  right: calc(var(--dancing-pad) + var(--dancing-rail));
 }
 
-.page--board__dancers-edge--top,
-.page--board__dancers-edge--bottom {
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  left: 3%;
-  right: 3%;
+.dancing-piece-frame__edge--bottom {
+  top: auto;
+  bottom: var(--dancing-pad);
 }
 
-.page--board__dancers-edge--top {
-  top: 0.35rem;
+.dancing-piece-frame__edge--right,
+.dancing-piece-frame__edge--left {
+  display: grid;
+  grid-template-rows: repeat(var(--piece-rows, 12), minmax(0, 1fr));
+  justify-items: center;
+  align-items: center;
+  top: var(--dancing-pad);
+  bottom: var(--dancing-pad);
+  width: var(--dancing-rail);
 }
 
-.page--board__dancers-edge--bottom {
-  bottom: 0.35rem;
+.dancing-piece-frame__edge--right {
+  right: var(--dancing-pad);
 }
 
-.page--board__dancers-edge--right,
-.page--board__dancers-edge--left {
-  flex-direction: column;
-  justify-content: space-between;
-  top: 11%;
-  bottom: 11%;
-  width: 1.1rem;
+.dancing-piece-frame__edge--left {
+  left: var(--dancing-pad);
 }
 
-.page--board__dancers-edge--right {
-  right: 0.2rem;
-}
-
-.page--board__dancers-edge--left {
-  left: 0.2rem;
-}
-
-.page--board__dancer {
+.dancing-piece-frame__piece {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   opacity: 0.42;
-  animation: page-board-dance 1.45s ease-in-out infinite;
+  animation: dancing-piece-frame-wiggle 1.45s ease-in-out infinite;
   animation-delay: calc(var(--d, 0) * 0.06s);
 }
 
-.page--board__dancer img {
+.dancing-piece-frame__piece img {
   width: 1.05rem;
   height: auto;
   max-height: 1.35rem;
@@ -297,13 +295,13 @@ a:hover {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
 }
 
-.page--board__dancers-edge--right .page--board__dancer img,
-.page--board__dancers-edge--left .page--board__dancer img {
+.dancing-piece-frame__edge--right .dancing-piece-frame__piece img,
+.dancing-piece-frame__edge--left .dancing-piece-frame__piece img {
   width: 0.92rem;
   max-height: 1.15rem;
 }
 
-@keyframes page-board-dance {
+@keyframes dancing-piece-frame-wiggle {
   0%,
   100% {
     transform: translateX(-3px);
@@ -314,14 +312,20 @@ a:hover {
 }
 
 @media (max-width: 639px) {
-  .page--board__dancers-edge--right,
-  .page--board__dancers-edge--left {
+  .dancing-piece-frame__edge--right,
+  .dancing-piece-frame__edge--left {
     display: none;
+  }
+
+  .dancing-piece-frame__edge--top,
+  .dancing-piece-frame__edge--bottom {
+    left: var(--dancing-pad);
+    right: var(--dancing-pad);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page--board__dancer {
+  .dancing-piece-frame__piece {
     animation: none;
   }
 }
@@ -629,7 +633,11 @@ a:hover {
 }
 
 button {
-  cursor: pointer;
+  cursor: var(--cursor-pointer, pointer);
+}
+
+button:disabled {
+  cursor: var(--cursor-default, auto);
 }
 
 .static-prose {
@@ -837,7 +845,7 @@ footer.site-footer p {
   border-radius: 12px;
   border: 3px solid rgba(44, 44, 44, 0.22);
   background: rgba(255, 255, 255, 0.42);
-  cursor: pointer;
+  cursor: var(--cursor-pointer, pointer);
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
@@ -849,9 +857,11 @@ footer.site-footer p {
 .chess-match__piece-toggle--on {
   border-color: rgba(139, 74, 92, 0.9);
   background: linear-gradient(180deg, rgba(255, 248, 235, 0.98), rgba(255, 220, 200, 0.45));
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.65),
-    3px 3px 0 rgba(44, 44, 44, 0.12);
+  box-shadow: none;
+}
+
+.chess-match__piece-toggle--on .chess-match__piece-toggle-face img {
+  filter: none;
 }
 
 .chess-match__piece-toggle--off {
@@ -865,14 +875,19 @@ footer.site-footer p {
 }
 
 .chess-match__piece-toggle--king {
-  cursor: default;
+  cursor: var(--cursor-default, default);
   border-style: solid;
   border-color: rgba(183, 110, 121, 0.65);
   background: linear-gradient(180deg, rgba(255, 252, 248, 0.99), rgba(240, 228, 218, 0.75));
   opacity: 1;
 }
 
-.chess-match__piece-toggle:focus-within {
+.chess-match__piece-toggle input {
+  outline: none;
+}
+
+/* No outline on mouse click — on/off styling is enough. Keyboard users still get a ring on the label. */
+.chess-match__piece-toggle:has(input:focus-visible) {
   outline: 2px solid var(--rose-deep);
   outline-offset: 3px;
 }
@@ -934,7 +949,7 @@ footer.site-footer p {
   border: 2px solid var(--board-edge);
   background: linear-gradient(180deg, rgba(255, 250, 246, 0.95), rgba(245, 242, 235, 0.98));
   box-shadow: 3px 3px 0 rgba(44, 44, 44, 0.08);
-  cursor: pointer;
+  cursor: var(--cursor-pointer, pointer);
 }
 
 .chess-match__btn:hover {
@@ -948,7 +963,7 @@ footer.site-footer p {
 
 .chess-match__btn:disabled {
   opacity: 0.45;
-  cursor: not-allowed;
+  cursor: var(--cursor-default, auto);
 }
 
 .chess-match__status {
@@ -1091,7 +1106,7 @@ footer.site-footer p {
   align-items: center;
   justify-content: center;
   position: relative;
-  cursor: pointer;
+  cursor: var(--cursor-pointer, pointer);
   transition: box-shadow 0.15s ease, transform 0.12s ease;
 }
 
