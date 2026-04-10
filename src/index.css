@@ -446,6 +446,7 @@ a:hover {
 }
 
 .picnic__pick {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
@@ -458,6 +459,40 @@ a:hover {
   color: var(--ink);
   cursor: pointer;
   vertical-align: middle;
+}
+
+/* Hover / keyboard focus: show the word (wine, cake, silly, …) */
+.picnic__pick::after {
+  content: attr(data-name);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid rgba(44, 44, 44, 0.14);
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.12);
+  font-family: Fraunces, Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--accent);
+  white-space: nowrap;
+  line-height: 1.2;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+  z-index: 2;
+}
+
+.picnic__pick:hover::after,
+.picnic__pick:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .picnic__pick:hover {

@@ -68,8 +68,8 @@ export function PicnicBar() {
         <button
           type="button"
           className="picnic__pick"
+          data-name={drinkItem.label}
           onClick={() => cycleNext(DRINKS, drink, setDrink)}
-          title={`${drinkItem.label} — tap for next`}
           aria-label={`Drink: ${drinkItem.label}. Tap to change.`}
         >
           <span className="picnic__pick-label">drink</span>
@@ -83,8 +83,8 @@ export function PicnicBar() {
         <button
           type="button"
           className="picnic__pick"
+          data-name={snackItem.label}
           onClick={() => cycleNext(SNACKS, snack, setSnack)}
-          title={`${snackItem.label} — tap for next`}
           aria-label={`Snack: ${snackItem.label}. Tap to change.`}
         >
           <span className="picnic__pick-label">snack</span>
@@ -98,8 +98,8 @@ export function PicnicBar() {
         <button
           type="button"
           className="picnic__pick"
+          data-name={vibeItem.label}
           onClick={() => cycleNext(VIBES, vibe, setVibe)}
-          title={`${vibeItem.label} — tap for next`}
           aria-label={`Vibe: ${vibeItem.label}. Tap to change.`}
         >
           <span className="picnic__pick-label">vibe</span>
