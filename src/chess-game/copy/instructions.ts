@@ -20,7 +20,7 @@ const BULLETS: Record<PieceType, string[]> = {
   K: [
     'Moves one square in any direction.',
     'You may never move into check or stay in check.',
-    'Castling: once per game, king jumps two toward a rook that hasn’t moved, path clear, not through or into attack.',
+    'Castling: king jumps two toward a rook — only if neither that king nor that rook has moved yet, squares between are empty, the king is not in check, and he does not pass through or land on an attacked square. Having been in check earlier is fine.',
   ],
   Q: [
     'Combines rook + bishop movement.',

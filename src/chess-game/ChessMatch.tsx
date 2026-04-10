@@ -78,12 +78,9 @@ const SS_EP = 'ccc_taught_ep';
 const AI_THINKING_LINES = [
   'Calculating a move…',
   'Thinking sooooo hard…',
-  'Give me just a moment…',
+  'This will only take a moment…',
   'Staring at the squares…',
-  'Consulting the tiny brain worms…',
-  'Hmm, spicy options here…',
-  'One sec — pretending to be deep…',
-  'Almost there, promise…',
+  'Consulting the 1s and 0s',
 ] as const;
 
 const AI_DIFFICULTY_ORDER: AiDifficulty[] = ['easy', 'medium', 'hard'];
@@ -341,9 +338,13 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const difficultyIndex = AI_DIFFICULTY_ORDER.indexOf(aiDifficulty);
 
+  const sideName = (c: Color) => (c === 'w' ? 'White' : 'Black');
+
   const turnLabel =
     outcome.phase === 'playing'
-      ? `${game.toMove === 'w' ? 'White' : 'Black'} to move`
+      ? vsAi && game.toMove === humanColor
+        ? `Your move (${sideName(humanColor)})`
+        : `${sideName(game.toMove)} to move`
       : outcome.phase === 'checkmate'
         ? 'Checkmate'
         : outcome.phase === 'stalemate'
@@ -386,6 +387,11 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         <p className="chess-match__toggle-note">
           Tip: turning a piece type on or off starts a <strong>fresh board</strong> (same seat; moves cleared).
         </p>
+        <div className="chess-match__toolbar-reset">
+          <button type="button" className="chess-match__btn chess-match__btn--ghost" onClick={() => beginNewGame()}>
+            Reset board
+          </button>
+        </div>
         <div className="chess-match__controls">
           <div className="chess-match__control-panel">
             <p className="chess-match__panel-label" id="opponent-label">
@@ -497,15 +503,6 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               {training ? 'Highlights legal moves & hover tips.' : 'No move glow — just the pieces.'}
             </p>
           </div>
-
-          <div className="chess-match__actions">
-            <button type="button" className="chess-match__btn" onClick={() => beginNewGame()}>
-              Reset board
-            </button>
-            <button type="button" className="chess-match__btn" onClick={undo} disabled={moveLog.length === 0}>
-              Undo
-            </button>
-          </div>
         </div>
         <p className="chess-match__status">
           {aiThinking ? (
@@ -513,36 +510,42 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               Computer: {AI_THINKING_LINES[thinkingLineIx]}
             </span>
           ) : (
-            <>
-              {turnLabel}
-              {vsAi ? (
-                <span className="chess-match__you">
-                  {' '}
-                  — You’re on the {humanColor === 'w' ? 'light' : 'dark'} side
-                </span>
-              ) : null}
-            </>
+            turnLabel
           )}
         </p>
       </div>
 
       <div className="chess-match__arena">
+        <div className="chess-match__graveyards-angel" aria-hidden="true">
+          😇
+        </div>
+
         <aside
           className="chess-match__graveyard chess-match__graveyard--white"
           aria-label="Captured white pieces"
         >
-          {capturePiles.whitePieces.map((p, i) => (
-            <div
-              key={`w-${i}-${p.type}`}
-              className="chess-match__grave-piece"
-              style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-            >
-              <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-            </div>
-          ))}
+          <span className="chess-match__graveyard-angel" aria-hidden="true">
+            😇
+          </span>
+          <div className="chess-match__grave-pile">
+            {capturePiles.whitePieces.map((p, i) => (
+              <div
+                key={`w-${i}-${p.type}`}
+                className="chess-match__grave-piece"
+                style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+              >
+                <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+              </div>
+            ))}
+          </div>
         </aside>
 
         <div className="chess-match__board-only">
+          <div className="chess-match__board-bar">
+            <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
+              Undo
+            </button>
+          </div>
           <div className="chess-board" role="grid" aria-label="Chess board">
             {Array.from({ length: 8 }, (_, rankFromTop) => (
               <div key={rankFromTop} className="chess-board__rank" role="row">
@@ -597,15 +600,20 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           className="chess-match__graveyard chess-match__graveyard--black"
           aria-label="Captured black pieces"
         >
-          {capturePiles.blackPieces.map((p, i) => (
-            <div
-              key={`b-${i}-${p.type}`}
-              className="chess-match__grave-piece"
-              style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-            >
-              <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-            </div>
-          ))}
+          <span className="chess-match__graveyard-angel" aria-hidden="true">
+            😇
+          </span>
+          <div className="chess-match__grave-pile">
+            {capturePiles.blackPieces.map((p, i) => (
+              <div
+                key={`b-${i}-${p.type}`}
+                className="chess-match__grave-piece"
+                style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+              >
+                <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+              </div>
+            ))}
+          </div>
         </aside>
       </div>
 

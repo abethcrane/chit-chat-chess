@@ -34,11 +34,9 @@ export function App() {
             Learn the pieces, then play
           </h2>
           <p className="section-lede">
-            Toggle which pieces are in play — that <strong>starts a fresh board</strong> (same seat). Use{' '}
-            <strong>Undo</strong> to step back and <strong>Reset board</strong> to redeal the position.{' '}
-            <strong>Coach mode</strong> highlights legal moves and explains hovers; <strong>Zen</strong> turns that off.
-            Pick <strong>Vs computer</strong> or <strong>Both sides</strong> (hot seat). The board turns so your seat is
-            always at the bottom.
+            Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).
+            </p>
+            <p>The board turns so that your seat (color) is always at the bottom.
           </p>
           <ChessMatch enabledTypes={enabledPieceTypes} onEnabledTypesChange={setEnabledPieceTypes} />
         </section>
