@@ -72,7 +72,7 @@ a:hover {
   border: 0;
 }
 
-/* Soft art + gentle large-scale grid (sides); 2book11 via --shell-art from App */
+/* Shell art via --shell-art from App; ::before adds a light white wash so it doesn’t compete with content */
 .shell {
   min-height: 100vh;
   padding: 0 0 2.5rem;
@@ -89,17 +89,12 @@ a:hover {
   z-index: -1;
   background-color: #e8e4dc;
   background-image:
-    linear-gradient(180deg, rgba(255, 254, 251, 0.82) 0%, rgba(248, 245, 238, 0.78) 55%, rgba(255, 254, 251, 0.85) 100%),
-    repeating-conic-gradient(
-      from 45deg,
-      rgba(44, 44, 44, 0.045) 0% 25%,
-      transparent 0% 50%
-    ),
+    linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.24)),
     var(--shell-art, none);
-  background-size: auto, 88px 88px, cover;
-  background-position: center, center, center 20%;
-  background-repeat: no-repeat, repeat, no-repeat;
-  background-blend-mode: normal, normal, multiply;
+  background-size: auto, cover;
+  background-position: center, center 20%;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: normal, normal;
 }
 
 .site-banner {
@@ -190,7 +185,7 @@ a:hover {
 .page--board {
   margin-top: -0.5rem;
   padding-top: 2.25rem;
-  background: rgba(255, 254, 251, 0.25);
+  background: rgba(255, 254, 251, 0.72);
   border: none;
   border-radius: 6px;
   box-shadow: 0 18px 56px rgba(0, 0, 0, 0.18);
@@ -285,7 +280,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  opacity: 0.42;
+  opacity: 1;
   animation: dancing-piece-frame-wiggle 1.45s ease-in-out infinite;
   /* Negative delay = ripple phase from frame 1 (no “wait for the wave” dead time) */
   animation-delay: calc(var(--d, 0) * -0.06s);

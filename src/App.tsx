@@ -5,12 +5,11 @@ import { HouseRules } from './components/HouseRules';
 import { PicnicBar } from './components/PicnicBar';
 import { RulesPlayfield } from './components/RulesPlayfield';
 import { SiteBanner } from './components/SiteBanner';
-import { SiteFooter } from './components/SiteFooter.tsx';
 import { DancingPieceFrame } from './components/DancingPieceFrame';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
-  ['--shell-art' as string]: `url("${import.meta.env.BASE_URL}images/alice-john-tenniel/chessboard-through-the-looking-glass-john-tenniel.jpg")`,
+  ['--shell-art' as string]: `url("${import.meta.env.BASE_URL}images/alice-john-tenniel/chessboard-recolorized-w-gemini.png")`,
 };
 
 export function App() {
@@ -51,7 +50,6 @@ export function App() {
           <h2 id="cta-heading">Want in?</h2>
           <p>We’re still setting up the table. Check back soon!</p>
         </section>
-        <SiteFooter />
       </DancingPieceFrame>
     </div>
   );
