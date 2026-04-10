@@ -15,8 +15,8 @@ const SNACKS = [
 ] as const;
 
 const VIBES = [
-  { id: 'silly', label: 'banter', emoji: '😜' },
-  { id: 'focused', label: 'lock_in', emoji: '🎧' },
+  { id: 'silly', label: 'silly', emoji: '😜' },
+  { id: 'focused', label: 'focused', emoji: '🎧' },
   { id: 'curious', label: 'curious', emoji: '🔎' },
 ] as const;
 

@@ -30,7 +30,7 @@ export function App() {
         <PicnicBar />
         <section className="panel panel--rose" aria-labelledby="learn-heading">
           <h2 id="learn-heading" className="section-title">
-            Learn the pieces, then play
+            Let's learn the game!
           </h2>
           <p className="section-lede">
             Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).

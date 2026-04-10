@@ -101,7 +101,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const [localEnabled, setLocalEnabled] = useState<Set<PieceType>>(() => new Set(ALL_PIECE_TYPES));
   const enabledTypes = controlledEnabled ?? localEnabled;
   const setEnabledTypes = onEnabledTypesChange ?? setLocalEnabled;
-  const [vsAi, setVsAi] = useState(true);
+  const [vsAi, setVsAi] = useState(false);
   const [humanColor, setHumanColor] = useState<Color>(() => (Math.random() < 0.5 ? 'w' : 'b'));
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [training, setTraining] = useState(true);
@@ -121,6 +121,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const bannerTimer = useRef<number | null>(null);
 
   const aiColor: Color = humanColor === 'w' ? 'b' : 'w';
+  /** Whose home rank is at the bottom. Both-sides mode: always White (standard diagram). Vs computer: your seat. */
+  const boardFacing: Color = vsAi ? humanColor : 'w';
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
@@ -314,7 +316,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       return;
     }
     const selectedHint =
-      'Piece selected. Highlighted squares are legal moves — hover one for details, or hover elsewhere to see why it’s not a legal destination.';
+      'Piece selected. Hover over a highlighted square for details about your legal moves, or hover any other square to see why it’s not a legal move for this piece.';
     // Keep a line of copy whenever something is selected so the panel height doesn’t jump.
     if (hoverSq === null || hoverSq === selected) {
       setHoverExplain(selectedHint);
@@ -550,7 +552,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
             {Array.from({ length: 8 }, (_, rankFromTop) => (
               <div key={rankFromTop} className="chess-board__rank" role="row">
                 {Array.from({ length: 8 }, (_, file) => {
-                  const sq = visualToSquare(file, rankFromTop, humanColor);
+                  const sq = visualToSquare(file, rankFromTop, boardFacing);
                   // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
                   const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
                   const p = game.board[sq];

@@ -185,6 +185,16 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
       };
     }
     if (moveWouldBeCapture(state, legalHit)) {
+      const victim = pieceAt(state, to);
+      if (victim?.type === 'N') {
+        return { tag: 'legal_capture', text: "please don't take my horse i love him!" };
+      }
+      if (victim) {
+        return {
+          tag: 'legal_capture',
+          text: `You can capture that ${pieceName(victim.type)}.`,
+        };
+      }
       return { tag: 'legal_capture', text: 'Legal capture — take the piece on that square.' };
     }
     return { tag: 'legal_quiet', text: 'Legal move — that square is free for this piece.' };
@@ -258,6 +268,8 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
 
 function pieceName(t: string): string {
   switch (t) {
+    case 'K':
+      return 'king';
     case 'Q':
       return 'queen';
     case 'R':
@@ -266,6 +278,8 @@ function pieceName(t: string): string {
       return 'bishop';
     case 'N':
       return 'knight';
+    case 'P':
+      return 'pawn';
     default:
       return t.toLowerCase();
   }
