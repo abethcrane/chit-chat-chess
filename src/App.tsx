@@ -1,8 +1,9 @@
 import { Hero } from './components/Hero';
 import { HouseRules } from './components/HouseRules';
-import { PretextPlayfield } from './components/PretextPlayfield';
+import { PicnicBar } from './components/PicnicBar';
+import { PretextPlayfield } from './components/PretextPlayfield.tsx';
 import { SiteBanner } from './components/SiteBanner';
-import { SiteFooter } from './components/SiteFooter';
+import { SiteFooter } from './components/SiteFooter.tsx';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
@@ -15,6 +16,7 @@ export function App() {
       <SiteBanner />
       <div className="page page--board">
         <Hero />
+        <PicnicBar />
         <HouseRules />
         <section className="panel panel--rose" aria-labelledby="playfield-heading">
           <h2 id="playfield-heading" className="section-title">

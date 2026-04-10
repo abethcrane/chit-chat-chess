@@ -5,6 +5,9 @@
   --accent: #8b4a5c;
   --rose: #c9a0a8;
   --rose-deep: #b76e79;
+  --mint: #9fd3c7;
+  --sky: #9bbcff;
+  --lemon: #f4d35e;
   --square-light: #f7f7f2;
   --square-dark: #2c2c2c;
   --board-edge: #1f1f1f;
@@ -144,6 +147,21 @@ a:hover {
   border-radius: 1px;
 }
 
+/* Little pastel sparkles behind the main card */
+.page--board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(159, 211, 199, 0.22) 0 18%, transparent 19%),
+    radial-gradient(circle at 86% 22%, rgba(155, 188, 255, 0.18) 0 16%, transparent 17%),
+    radial-gradient(circle at 76% 84%, rgba(244, 211, 94, 0.16) 0 18%, transparent 19%),
+    radial-gradient(circle at 18% 86%, rgba(201, 160, 168, 0.18) 0 16%, transparent 17%);
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+
 .panel--note {
   padding: 1.25rem 1.25rem 0.6rem;
   margin: 0 0 2rem;
@@ -177,6 +195,60 @@ a:hover {
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.picnic {
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(159, 211, 199, 0.20), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(90deg, rgba(201, 160, 168, 0.14), rgba(155, 188, 255, 0.10));
+  border: 1px solid rgba(44, 44, 44, 0.16);
+}
+
+.picnic__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.picnic__line {
+  font-style: italic;
+  color: var(--accent);
+  flex: 1 1 auto;
+  min-width: 16rem;
+}
+
+.picnic__reroll {
+  border: 1px solid rgba(44, 44, 44, 0.18);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 10px;
+  padding: 0.35rem 0.55rem;
+  font: inherit;
+  color: var(--ink);
+}
+
+.picnic__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.picnic__control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.picnic select {
+  border: 1px solid rgba(44, 44, 44, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
 }
 
 .lede {
