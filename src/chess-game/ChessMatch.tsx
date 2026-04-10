@@ -423,7 +423,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           ))}
         </aside>
 
-        <div className="chess-match__board-wrap">
+        <div className="chess-match__board-only">
           <div className="chess-board" role="grid" aria-label="Chess board">
             {Array.from({ length: 8 }, (_, rankFromTop) => (
               <div key={rankFromTop} className="chess-board__rank" role="row">
@@ -472,16 +472,6 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               </div>
             ))}
           </div>
-          {banner ? (
-            <div className="chess-match__banner chess-match__banner--under-board" role="status">
-              {banner}
-            </div>
-          ) : null}
-          {training && selected !== null ? (
-            <div className="chess-match__explain-slot">
-              <p className="chess-match__explain">{hoverExplain}</p>
-            </div>
-          ) : null}
         </div>
 
         <aside
@@ -499,6 +489,21 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           ))}
         </aside>
       </div>
+
+      {banner || (training && selected !== null) ? (
+        <div className="chess-match__foot">
+          {banner ? (
+            <div className="chess-match__banner chess-match__banner--under-board" role="status">
+              {banner}
+            </div>
+          ) : null}
+          {training && selected !== null ? (
+            <div className="chess-match__explain-slot">
+              <p className="chess-match__explain">{hoverExplain}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

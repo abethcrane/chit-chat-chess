@@ -4,7 +4,7 @@ import { attribution } from '../content/chessFlourish';
 
 const PIECE_TARGET_W = 72;
 
-type PieceKind = 'knightWhite' | 'knightBlack' | 'bishop' | 'king' | 'queen' | 'rook' | 'pawn';
+type PieceKind = 'knightWhite' | 'bishop' | 'king' | 'queen' | 'rook' | 'pawn';
 
 export type RulesPlayfieldProps = {
   instructionSections: InstructionSection[];
@@ -15,7 +15,6 @@ type DockDef = { kind: PieceKind; label: string; path: string; pieceType: PieceT
 
 const DOCK_ITEMS: DockDef[] = [
   { kind: 'knightWhite', label: 'Knight (Kevin)', path: 'images/pieces/white-knight1.png', pieceType: 'N' },
-  { kind: 'knightBlack', label: 'Knight (Kayla)', path: 'images/pieces/black-knight2.png', pieceType: 'N' },
   { kind: 'bishop', label: 'Bishop', path: 'images/pieces/white-bishop.png', pieceType: 'B' },
   { kind: 'king', label: 'King', path: 'images/pieces/white-king.png', pieceType: 'K' },
   { kind: 'queen', label: 'Queen', path: 'images/pieces/white-queen.png', pieceType: 'Q' },
@@ -24,7 +23,7 @@ const DOCK_ITEMS: DockDef[] = [
 ];
 
 function pieceTypeForKind(kind: PieceKind): PieceType {
-  if (kind === 'knightWhite' || kind === 'knightBlack') return 'N';
+  if (kind === 'knightWhite') return 'N';
   if (kind === 'bishop') return 'B';
   if (kind === 'king') return 'K';
   if (kind === 'queen') return 'Q';
@@ -42,23 +41,6 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener('change', onChange);
   }, []);
   return reduced;
-}
-
-function burstHearts() {
-  const root = document.createElement('div');
-  root.className = 'hearts';
-  root.setAttribute('aria-hidden', 'true');
-  const hearts = ['♥', '♡', '❦'];
-  for (let i = 0; i < 18; i++) {
-    const bit = document.createElement('span');
-    bit.textContent = hearts[i % hearts.length]!;
-    bit.style.left = `${Math.random() * 100}%`;
-    bit.style.color = i % 3 === 0 ? '#b76e79' : i % 3 === 1 ? '#c9a0a8' : '#8b4a5c';
-    bit.style.animationDelay = `${Math.random() * 0.22}s`;
-    root.appendChild(bit);
-  }
-  document.body.appendChild(root);
-  window.setTimeout(() => root.remove(), 2000);
 }
 
 function InstructionBody({ sections }: { sections: InstructionSection[] }) {
@@ -152,7 +134,6 @@ export function RulesPlayfield({ instructionSections, enabledPieceTypes }: Rules
     const say = (() => {
       switch (activePiece) {
         case 'knightWhite':
-        case 'knightBlack':
           return "please don’t take my horse i love him";
         case 'bishop':
           return 'my hat is not a handle. i am a delicate little lad.';
@@ -167,7 +148,6 @@ export function RulesPlayfield({ instructionSections, enabledPieceTypes }: Rules
       }
     })();
     setQuip(say);
-    burstHearts();
     if (quipTimerRef.current) window.clearTimeout(quipTimerRef.current);
     quipTimerRef.current = window.setTimeout(() => setQuip(null), 1400);
   };
