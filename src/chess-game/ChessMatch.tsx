@@ -75,6 +75,25 @@ function isEnPassantMove(prev: GameState, move: Move): boolean {
 const SS_CASTLE = 'ccc_taught_castle';
 const SS_EP = 'ccc_taught_ep';
 
+const AI_THINKING_LINES = [
+  'Calculating a move…',
+  'Thinking sooooo hard…',
+  'Give me just a moment…',
+  'Staring at the squares…',
+  'Consulting the tiny brain worms…',
+  'Hmm, spicy options here…',
+  'One sec — pretending to be deep…',
+  'Almost there, promise…',
+] as const;
+
+const AI_DIFFICULTY_ORDER: AiDifficulty[] = ['easy', 'medium', 'hard'];
+
+const AI_DIFFICULTY_LABEL: Record<AiDifficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+};
+
 export type ChessMatchProps = {
   enabledTypes?: Set<PieceType>;
   onEnabledTypesChange?: (next: Set<PieceType>) => void;
@@ -125,27 +144,21 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     return { whitePieces: sortCaptured(whitePieces), blackPieces: sortCaptured(blackPieces) };
   }, [start, moveLog]);
 
-  const beginNewGame = useCallback(
-    (randomizeColor: boolean) => {
-      const set = new Set(enabledTypes);
-      set.add('K');
-      try {
-        const g = createGame(set);
-        setStart(g);
-        setMoveLog([]);
-        setSelected(null);
-        setHoverSq(null);
-        setBanner(null);
-        setHoverExplain(null);
-        if (randomizeColor && vsAi) {
-          setHumanColor(Math.random() < 0.5 ? 'w' : 'b');
-        }
-      } catch {
-        setBanner('Need both kings — enable the king for each side.');
-      }
-    },
-    [enabledTypes, vsAi],
-  );
+  const beginNewGame = useCallback(() => {
+    const set = new Set(enabledTypes);
+    set.add('K');
+    try {
+      const g = createGame(set);
+      setStart(g);
+      setMoveLog([]);
+      setSelected(null);
+      setHoverSq(null);
+      setBanner(null);
+      setHoverExplain(null);
+    } catch {
+      setBanner('Need both kings — enable the king for each side.');
+    }
+  }, [enabledTypes]);
 
   /** When the piece-type set changes, start a fresh standard position (same color) so the board matches the toggles. */
   const pieceSetSigRef = useRef<string | null>(null);
@@ -157,7 +170,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     }
     if (pieceSetSigRef.current === sig) return;
     pieceSetSigRef.current = sig;
-    beginNewGame(false);
+    beginNewGame();
   }, [enabledTypes, beginNewGame]);
 
   const undo = useCallback(() => {
@@ -314,6 +327,20 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     setHoverExplain(ex.text);
   }, [training, selected, hoverSq, game]);
 
+  const aiThinking = vsAi && outcome.phase === 'playing' && game.toMove === aiColor;
+  const [thinkingLineIx, setThinkingLineIx] = useState(0);
+
+  useEffect(() => {
+    if (!aiThinking) return;
+    setThinkingLineIx(Math.floor(Math.random() * AI_THINKING_LINES.length));
+    const id = window.setInterval(() => {
+      setThinkingLineIx((i) => (i + 1) % AI_THINKING_LINES.length);
+    }, 1700);
+    return () => window.clearInterval(id);
+  }, [aiThinking]);
+
+  const difficultyIndex = AI_DIFFICULTY_ORDER.indexOf(aiDifficulty);
+
   const turnLabel =
     outcome.phase === 'playing'
       ? `${game.toMove === 'w' ? 'White' : 'Black'} to move`
@@ -356,54 +383,146 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
             );
           })}
         </div>
-        <div className="chess-match__row">
-          <label className="chess-match__inline">
-            <input type="checkbox" checked={vsAi} onChange={(e) => setVsAi(e.target.checked)} />
-            Play vs AI
-          </label>
-          {vsAi ? (
-            <>
-              <label className="chess-match__inline">
-                You are{' '}
-                <select value={humanColor} onChange={(e) => setHumanColor(e.target.value as Color)}>
-                  <option value="w">White</option>
-                  <option value="b">Black</option>
-                </select>
-              </label>
-              <label className="chess-match__inline">
-                Difficulty{' '}
-                <select value={aiDifficulty} onChange={(e) => setAiDifficulty(e.target.value as AiDifficulty)}>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </label>
-            </>
-          ) : null}
-          <label className="chess-match__inline">
-            <input type="checkbox" checked={training} onChange={(e) => setTraining(e.target.checked)} />
-            Training highlights
-          </label>
-          <button type="button" className="chess-match__btn" onClick={() => beginNewGame(false)}>
-            Reset board
-          </button>
-          {vsAi ? (
-            <button type="button" className="chess-match__btn chess-match__btn--ghost" onClick={() => beginNewGame(true)}>
-              Reset board · random side
+        <p className="chess-match__toggle-note">
+          Tip: turning a piece type on or off starts a <strong>fresh board</strong> (same seat; moves cleared).
+        </p>
+        <div className="chess-match__controls">
+          <div className="chess-match__control-panel">
+            <p className="chess-match__panel-label" id="opponent-label">
+              Opponent
+            </p>
+            <div
+              className="chess-match__seg"
+              role="group"
+              aria-labelledby="opponent-label"
+            >
+              <button
+                type="button"
+                className={`chess-match__seg-btn${vsAi ? ' chess-match__seg-btn--active' : ''}`}
+                aria-pressed={vsAi}
+                onClick={() => setVsAi(true)}
+              >
+                Vs computer
+              </button>
+              <button
+                type="button"
+                className={`chess-match__seg-btn${!vsAi ? ' chess-match__seg-btn--active' : ''}`}
+                aria-pressed={!vsAi}
+                onClick={() => setVsAi(false)}
+              >
+                Both sides
+              </button>
+            </div>
+            {vsAi ? (
+              <div className="chess-match__panel-fields">
+                <div>
+                  <p className="chess-match__micro-label" id="seat-label">
+                    Your seat
+                  </p>
+                  <div className="chess-match__seg chess-match__seg--seat" role="group" aria-labelledby="seat-label">
+                    <button
+                      type="button"
+                      className={`chess-match__seg-btn${humanColor === 'w' ? ' chess-match__seg-btn--active' : ''}`}
+                      aria-pressed={humanColor === 'w'}
+                      onClick={() => setHumanColor('w')}
+                    >
+                      Light side
+                    </button>
+                    <button
+                      type="button"
+                      className={`chess-match__seg-btn${humanColor === 'b' ? ' chess-match__seg-btn--active' : ''}`}
+                      aria-pressed={humanColor === 'b'}
+                      onClick={() => setHumanColor('b')}
+                    >
+                      Dark side
+                    </button>
+                  </div>
+                </div>
+                <div className="chess-match__slider-block">
+                  <label className="chess-match__slider-label" htmlFor="ai-difficulty-slider">
+                    <span>Computer strength</span>
+                    <span className="chess-match__slider-value">{AI_DIFFICULTY_LABEL[aiDifficulty]}</span>
+                  </label>
+                  <input
+                    id="ai-difficulty-slider"
+                    type="range"
+                    className="chess-match__diff-slider"
+                    min={0}
+                    max={2}
+                    step={1}
+                    value={difficultyIndex}
+                    aria-valuemin={0}
+                    aria-valuemax={2}
+                    aria-valuenow={difficultyIndex}
+                    aria-valuetext={AI_DIFFICULTY_LABEL[aiDifficulty]}
+                    onChange={(e) =>
+                      setAiDifficulty(AI_DIFFICULTY_ORDER[Number(e.target.value)] as AiDifficulty)
+                    }
+                  />
+                  <div className="chess-match__slider-ticks" aria-hidden="true">
+                    <span>Easy</span>
+                    <span>Medium</span>
+                    <span>Hard</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="chess-match__panel-hint">Move for White and Black — hot-seat style.</p>
+            )}
+          </div>
+
+          <div className="chess-match__control-panel">
+            <p className="chess-match__panel-label" id="hints-label">
+              Board hints
+            </p>
+            <div className="chess-match__seg" role="group" aria-labelledby="hints-label">
+              <button
+                type="button"
+                className={`chess-match__seg-btn${training ? ' chess-match__seg-btn--active' : ''}`}
+                aria-pressed={training}
+                onClick={() => setTraining(true)}
+              >
+                Coach mode
+              </button>
+              <button
+                type="button"
+                className={`chess-match__seg-btn${!training ? ' chess-match__seg-btn--active' : ''}`}
+                aria-pressed={!training}
+                onClick={() => setTraining(false)}
+              >
+                Zen
+              </button>
+            </div>
+            <p className="chess-match__panel-hint chess-match__panel-hint--tight">
+              {training ? 'Highlights legal moves & hover tips.' : 'No move glow — just the pieces.'}
+            </p>
+          </div>
+
+          <div className="chess-match__actions">
+            <button type="button" className="chess-match__btn" onClick={() => beginNewGame()}>
+              Reset board
             </button>
-          ) : null}
-          <button type="button" className="chess-match__btn" onClick={undo} disabled={moveLog.length === 0}>
-            Undo
-          </button>
+            <button type="button" className="chess-match__btn" onClick={undo} disabled={moveLog.length === 0}>
+              Undo
+            </button>
+          </div>
         </div>
         <p className="chess-match__status">
-          {turnLabel}
-          {vsAi ? (
-            <span className="chess-match__you">
-              {' '}
-              — You are {humanColor === 'w' ? 'White' : 'Black'}
+          {aiThinking ? (
+            <span className="chess-match__ai-thinking" role="status" aria-live="polite" aria-atomic="true">
+              Computer: {AI_THINKING_LINES[thinkingLineIx]}
             </span>
-          ) : null}
+          ) : (
+            <>
+              {turnLabel}
+              {vsAi ? (
+                <span className="chess-match__you">
+                  {' '}
+                  — You’re on the {humanColor === 'w' ? 'light' : 'dark'} side
+                </span>
+              ) : null}
+            </>
+          )}
         </p>
       </div>
 

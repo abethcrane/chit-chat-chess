@@ -184,7 +184,7 @@ a:hover {
 .page {
   max-width: 52rem;
   margin: 0 auto;
-  padding: 2rem 1.25rem 3rem;
+  padding: 2.5rem 1.75rem 3.5rem;
 }
 
 .page--board {
@@ -195,6 +195,13 @@ a:hover {
   border-radius: 6px;
   box-shadow: 0 18px 56px rgba(0, 0, 0, 0.18);
   position: relative;
+}
+
+/* Full-width column on small screens — solid paper hid the shell art; let it show through. */
+@media (max-width: 639px) {
+  .page--board {
+    background: rgba(255, 254, 251, 0.25);
+  }
 }
 
 /* Little pastel sparkles behind the main card */
@@ -215,7 +222,7 @@ a:hover {
 
 /* Reusable animated “border” of chess pieces (see DancingPieceFrame.tsx) */
 .dancing-piece-frame {
-  --dancing-pad: 0.35rem;
+  --dancing-pad: 0.55rem;
   --dancing-rail: 1.1rem;
   position: relative;
   box-sizing: border-box;
@@ -284,7 +291,8 @@ a:hover {
   flex-shrink: 0;
   opacity: 0.42;
   animation: dancing-piece-frame-wiggle 1.45s ease-in-out infinite;
-  animation-delay: calc(var(--d, 0) * 0.06s);
+  /* Negative delay = ripple phase from frame 1 (no “wait for the wave” dead time) */
+  animation-delay: calc(var(--d, 0) * -0.06s);
 }
 
 .dancing-piece-frame__piece img {
@@ -836,6 +844,22 @@ footer.site-footer p {
   justify-content: center;
 }
 
+.chess-match__toggle-note {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink);
+  opacity: 0.78;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.chess-match__toggle-note strong {
+  font-weight: 700;
+  opacity: 0.95;
+}
+
 .chess-match__piece-toggle {
   display: inline-flex;
   flex-direction: column;
@@ -925,6 +949,202 @@ footer.site-footer p {
   flex-wrap: wrap;
   gap: 0.65rem 1rem;
   align-items: center;
+}
+
+.chess-match__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: stretch;
+}
+
+.chess-match__control-panel {
+  flex: 1 1 200px;
+  max-width: 320px;
+  padding: 0.55rem 0.7rem 0.6rem;
+  border-radius: 14px;
+  border: 2px solid rgba(139, 74, 92, 0.22);
+  background: linear-gradient(165deg, rgba(255, 252, 248, 0.72), rgba(255, 236, 228, 0.38));
+  box-shadow: 0 2px 12px rgba(44, 44, 44, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.chess-match__panel-label {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+.chess-match__panel-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink);
+  opacity: 0.78;
+}
+
+.chess-match__panel-hint--tight {
+  margin-top: -0.1rem;
+}
+
+.chess-match__panel-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+}
+
+.chess-match__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.chess-match__field-label {
+  flex-shrink: 0;
+  opacity: 0.88;
+}
+
+.chess-match__field select {
+  font: inherit;
+  padding: 0.22rem 0.4rem;
+  border-radius: 8px;
+  border: 1px solid rgba(44, 44, 44, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+  min-width: 7.5rem;
+}
+
+.chess-match__seg {
+  display: flex;
+  flex-wrap: nowrap;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(44, 44, 44, 0.09);
+  gap: 2px;
+}
+
+.chess-match__seg-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 2px solid transparent;
+  background: transparent;
+  padding: 0.38rem 0.65rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  cursor: var(--cursor-pointer, pointer);
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.chess-match__seg-btn:hover:not(.chess-match__seg-btn--active) {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.chess-match__seg-btn--active {
+  background: linear-gradient(180deg, rgba(255, 248, 235, 0.98), rgba(255, 210, 195, 0.42));
+  border-color: rgba(139, 74, 92, 0.82);
+  box-shadow: 2px 2px 0 rgba(44, 44, 44, 0.07);
+}
+
+.chess-match__seg-btn:focus-visible {
+  outline: 2px solid var(--rose-deep);
+  outline-offset: 2px;
+}
+
+.chess-match__seg--seat .chess-match__seg-btn {
+  font-size: 0.78rem;
+  padding: 0.34rem 0.55rem;
+}
+
+.chess-match__micro-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+.chess-match__slider-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.2rem;
+}
+
+.chess-match__slider-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.84rem;
+  margin: 0;
+  cursor: var(--cursor-pointer, pointer);
+}
+
+.chess-match__slider-value {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: rgba(139, 74, 92, 0.95);
+  letter-spacing: 0.03em;
+}
+
+.chess-match__diff-slider {
+  width: 100%;
+  margin: 0.15rem 0 0;
+  height: 1.35rem;
+  background: transparent;
+  cursor: var(--cursor-pointer, pointer);
+  accent-color: rgba(139, 74, 92, 0.85);
+}
+
+.chess-match__diff-slider:focus-visible {
+  outline: 2px solid var(--rose-deep);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.chess-match__slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  opacity: 0.55;
+  padding: 0 0.15rem;
+  margin-top: -0.05rem;
+}
+
+.chess-match__ai-thinking {
+  font-style: italic;
+  color: rgba(139, 74, 92, 0.92);
+}
+
+.chess-match__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.65rem;
+  align-items: center;
+  align-content: center;
+  flex: 1 1 180px;
 }
 
 .chess-match__inline {
@@ -1065,6 +1285,65 @@ footer.site-footer p {
   flex: 0 0 auto;
   width: max-content;
   max-width: 100%;
+}
+
+/* Narrow viewports: board full width, both graveyards in one band below (no horizontal squeeze). */
+@media (max-width: 639px) {
+  .chess-match__arena {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    align-items: stretch;
+    justify-items: stretch;
+    column-gap: 0;
+    row-gap: 0.5rem;
+    overflow-x: visible;
+    overscroll-behavior-x: auto;
+  }
+
+  .chess-match__board-only {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .chess-match__graveyard {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.3rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+  }
+
+  .chess-match__graveyard--white {
+    grid-column: 1;
+    grid-row: 2;
+    border-radius: 10px 0 0 10px;
+    border-right: 1px solid rgba(44, 44, 44, 0.2);
+  }
+
+  .chess-match__graveyard--black {
+    grid-column: 2;
+    grid-row: 2;
+    border-radius: 0 10px 10px 0;
+    border-left: none;
+  }
+
+  .chess-match__grave-piece {
+    margin-top: 0;
+    margin-left: -20%;
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .chess-match__grave-piece:first-child {
+    margin-left: 0;
+  }
 }
 
 .chess-match__foot {

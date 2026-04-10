@@ -12,7 +12,7 @@ const PREVIEW_SQ = square(0, 0);
 const base = import.meta.env.BASE_URL;
 
 /** Must match `--dancing-pad` / `--dancing-rail` in `index.css` */
-const DANCER_PAD_REM = 0.35;
+const DANCER_PAD_REM = 0.55;
 const DANCER_RAIL_REM = 1.1;
 
 /** Match `@media (max-width: 639px)` — no side rails, top/bottom use full width */
