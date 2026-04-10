@@ -5,7 +5,7 @@ export function HouseRules() {
         Chess: ✅ &nbsp; Stress: ❌
       </h2>
       <p className="prose">
-        Beth and Belle here: we think that by default chess is setup to be stressful. Unless you’re evenly matched with a close friend, it’s easy to feel like mistakes mean you’re not smart, and then to get tense and quiet and weird about a board game. Chit Chat Chess is us working super hard to undo that.
+        Beth and Belle here: we think that by default chess is setup to be stressful - it’s easy to feel like mistakes mean you’re not smart, and then to have a miserable time playing a board game. Chit Chat Chess is us working super hard to undo that.
       </p>
       <p className="prose">
         We’re here for the love of the game, and ideally to learn and improve as we play....but mostly to have a nice time with our friends. When we play together, we treat it like a cooperative experience in making a good, interesting game. We’ll rewind a few moves

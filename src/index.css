@@ -864,6 +864,8 @@ footer.site-footer p {
   /* Keep in sync with .chess-board-perspective padding. Bar sits inside perspective, flush above the grid. */
   --chess-perspective-pad-top: clamp(6px, 2.5vw, 28px);
   --chess-perspective-pad-x: clamp(8px, 3.5vw, 40px);
+  /* Room below grid for rotateZ + drop-shadow; tightened on narrow screens in the mobile block. */
+  --chess-perspective-pad-bottom: clamp(0.45rem, 2vw, 1.5rem);
   --chess-board-bar-min-h: 2.2rem;
   --chess-board-bar-stack-gap: 0;
 }
@@ -1517,6 +1519,10 @@ footer.site-footer p {
 
 /* Narrow viewports: angel row, then board + captures (grid inside .chess-match__board-cluster). */
 @media (max-width: 639px) {
+  .chess-match {
+    --chess-perspective-pad-bottom: 0.35rem;
+  }
+
   .chess-match__arena {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1623,16 +1629,21 @@ footer.site-footer p {
   .chess-match__grave-piece:first-child {
     margin-left: 0;
   }
+
+  .chess-match__explain-slot {
+    min-height: 3.25rem;
+    max-height: 5.5rem;
+  }
 }
 
 .chess-match__foot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   width: 100%;
   max-width: min(42ch, 100%);
-  margin: 0.65rem auto 0;
+  margin: 0.3rem auto 0;
   box-sizing: border-box;
 }
 
@@ -1650,7 +1661,7 @@ footer.site-footer p {
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
-  padding: var(--chess-perspective-pad-top) var(--chess-perspective-pad-x) 2.75rem;
+  padding: var(--chess-perspective-pad-top) var(--chess-perspective-pad-x) var(--chess-perspective-pad-bottom);
 }
 
 .chess-board {
