@@ -50,7 +50,7 @@ export function App() {
         <VibePanel />
         <section className="cta" aria-labelledby="cta-heading">
           <h2 id="cta-heading">Want in?</h2>
-          <p>We’re still setting up the table. Check back soon!</p>
+          <p>Text Beth and/or Belle to get them to organize an event! </p>
         </section>
       </DancingPieceFrame>
     </div>

@@ -22,8 +22,8 @@ export function VibePanel() {
   const base = import.meta.env.BASE_URL;
   return (
     <section className="vibe-panel" aria-labelledby="vibe-heading">
-      <h2 id="vibe-heading" className="section-title vibe-panel__title">
-        The vibe we mean
+      <h2 id="vibe-heading" className="section-title">
+        The vibe
       </h2>
       <div className="vibe-panel__grid">
         {VIBE_IMAGES.map(({ file, caption }) => {

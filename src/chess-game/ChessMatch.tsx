@@ -465,12 +465,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
           ? 'Stalemate'
           : 'Draw';
     return (
-      <div
-        className="chess-match__turn-callout chess-match__turn-callout--terminal"
-        role="status"
-        aria-live="polite"
-        aria-label={end}
-      >
+      <div className="chess-match__turn-callout" role="status" aria-live="polite" aria-label={end}>
         <span className="chess-match__turn-callout-terminal">{end}</span>
       </div>
     );
@@ -637,121 +632,121 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         </div>
 
         <div className="chess-match__board-only">
-          <div className="chess-match__board-bar">
-            <div className="chess-match__board-bar-left">{turnCallout}</div>
-            <div className="chess-match__board-bar-right">
-              <label className="chess-match__rotate-board" htmlFor="chess-rotate-board">
-                <input
-                  id="chess-rotate-board"
-                  type="checkbox"
-                  className="sr-only"
-                  checked={rotateBoardToSeat}
-                  onChange={(e) => setRotateBoardToSeat(e.target.checked)}
-                />
-                <span className="chess-match__rotate-board-track" aria-hidden="true" />
-                <span className="chess-match__rotate-board-text">Face seat</span>
-              </label>
-              <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
-                Undo
-              </button>
-            </div>
-          </div>
           <div className="chess-board-perspective">
-            <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
-              {Array.from({ length: 8 }, (_, rankFromTop) => (
-                <div key={rankFromTop} className="chess-board__rank" role="row">
-                  {Array.from({ length: 8 }, (_, file) => {
-                    const sq = cellToSquare(file, rankFromTop);
-                    // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
-                    const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
-                    const p = game.board[sq];
-                    const isSel = selected === sq;
-                    const isLegal = legalDests.has(sq);
-                    const isLegalCapture = isLegal && p && p.color !== game.toMove;
-                    const isLegalQuiet = isLegal && !isLegalCapture;
-                    const isHover = hoverSq === sq;
-                    return (
-                      <button
-                        key={sq}
-                        type="button"
-                        role="gridcell"
-                        aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
-                        className={[
-                          'chess-board__sq',
-                          light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
-                          isSel ? 'chess-board__sq--selected' : '',
-                          isLegal ? 'chess-board__sq--legal' : '',
-                          isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
-                          isLegalCapture ? 'chess-board__sq--legal-capture' : '',
-                          isHover ? 'chess-board__sq--hover' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        onClick={() => onSquareClick(sq)}
-                        onMouseEnter={() => setHoverSq(sq)}
-                        onMouseLeave={() => setHoverSq(null)}
-                      >
-                        {p ? (
-                          <img
-                            className="chess-board__piece"
-                            src={pieceImageUrl(base, p, sq)}
-                            alt=""
-                            style={{
-                              ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]),
-                              transform: `rotate(${pieceSpinDeg}deg)`,
-                              transformOrigin: 'center center',
-                            }}
-                          />
-                        ) : null}
-                      </button>
-                    );
-                  })}
+            <div className="chess-match__board-bar">
+              <div className="chess-match__board-bar-left">{turnCallout}</div>
+              <div className="chess-match__board-bar-right">
+                <label className="chess-match__rotate-board" htmlFor="chess-rotate-board">
+                  <input
+                    id="chess-rotate-board"
+                    type="checkbox"
+                    className="sr-only"
+                    checked={rotateBoardToSeat}
+                    onChange={(e) => setRotateBoardToSeat(e.target.checked)}
+                  />
+                  <span className="chess-match__rotate-board-track" aria-hidden="true" />
+                  <span className="chess-match__rotate-board-text">Face seat</span>
+                </label>
+                <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
+                  Undo
+                </button>
+              </div>
+            </div>
+            <div className="chess-match__board-cluster">
+              <aside
+                className="chess-match__graveyard chess-match__graveyard--white"
+                aria-label="Captured white pieces"
+              >
+                <span className="chess-match__graveyard-angel" aria-hidden="true">
+                  😇
+                </span>
+                <div className="chess-match__grave-pile">
+                  {capturePiles.whitePieces.map((p, i) => (
+                    <div
+                      key={`w-${i}-${p.type}`}
+                      className="chess-match__grave-piece"
+                      style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+                    >
+                      <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </aside>
+
+              <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
+                {Array.from({ length: 8 }, (_, rankFromTop) => (
+                  <div key={rankFromTop} className="chess-board__rank" role="row">
+                    {Array.from({ length: 8 }, (_, file) => {
+                      const sq = cellToSquare(file, rankFromTop);
+                      // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
+                      const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
+                      const p = game.board[sq];
+                      const isSel = selected === sq;
+                      const isLegal = legalDests.has(sq);
+                      const isLegalCapture = isLegal && p && p.color !== game.toMove;
+                      const isLegalQuiet = isLegal && !isLegalCapture;
+                      const isHover = hoverSq === sq;
+                      return (
+                        <button
+                          key={sq}
+                          type="button"
+                          role="gridcell"
+                          aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
+                          className={[
+                            'chess-board__sq',
+                            light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
+                            isSel ? 'chess-board__sq--selected' : '',
+                            isLegal ? 'chess-board__sq--legal' : '',
+                            isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
+                            isLegalCapture ? 'chess-board__sq--legal-capture' : '',
+                            isHover ? 'chess-board__sq--hover' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          onClick={() => onSquareClick(sq)}
+                          onMouseEnter={() => setHoverSq(sq)}
+                          onMouseLeave={() => setHoverSq(null)}
+                        >
+                          {p ? (
+                            <img
+                              className="chess-board__piece"
+                              src={pieceImageUrl(base, p, sq)}
+                              alt=""
+                              style={{
+                                ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]),
+                                transform: `rotate(${pieceSpinDeg}deg)`,
+                                transformOrigin: 'center center',
+                              }}
+                            />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              <aside
+                className="chess-match__graveyard chess-match__graveyard--black"
+                aria-label="Captured black pieces"
+              >
+                <span className="chess-match__graveyard-angel" aria-hidden="true">
+                  😇
+                </span>
+                <div className="chess-match__grave-pile">
+                  {capturePiles.blackPieces.map((p, i) => (
+                    <div
+                      key={`b-${i}-${p.type}`}
+                      className="chess-match__grave-piece"
+                      style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
+                    >
+                      <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
+                    </div>
+                  ))}
+                </div>
+              </aside>
             </div>
           </div>
-        </div>
-
-        <div className="chess-match__graveyard-band">
-          <aside
-            className="chess-match__graveyard chess-match__graveyard--white"
-            aria-label="Captured white pieces"
-          >
-            <span className="chess-match__graveyard-angel" aria-hidden="true">
-              😇
-            </span>
-            <div className="chess-match__grave-pile">
-              {capturePiles.whitePieces.map((p, i) => (
-                <div
-                  key={`w-${i}-${p.type}`}
-                  className="chess-match__grave-piece"
-                  style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-                >
-                  <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-                </div>
-              ))}
-            </div>
-          </aside>
-
-          <aside
-            className="chess-match__graveyard chess-match__graveyard--black"
-            aria-label="Captured black pieces"
-          >
-            <span className="chess-match__graveyard-angel" aria-hidden="true">
-              😇
-            </span>
-            <div className="chess-match__grave-pile">
-              {capturePiles.blackPieces.map((p, i) => (
-                <div
-                  key={`b-${i}-${p.type}`}
-                  className="chess-match__grave-piece"
-                  style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-                >
-                  <img src={pieceImageUrl(base, p, square(0, 0))} alt="" />
-                </div>
-              ))}
-            </div>
-          </aside>
         </div>
       </div>
 
