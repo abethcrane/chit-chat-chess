@@ -13,7 +13,7 @@ import {
 import { fileOf, rankOf, square, toAlgebraic } from './core/types';
 import { pieceAt as at } from './core/board';
 import { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './core/game';
-import { explainSquare } from './core/explain';
+import { explainSquare, pieceName } from './core/explain';
 import { getCapturedPiece, legalMovesFrom } from './core/moves';
 import { PIECE_HEIGHT_RATIO, pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
 
@@ -135,7 +135,10 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const [selected, setSelected] = useState<Square | null>(null);
   const [hoverSq, setHoverSq] = useState<Square | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [checkNotice, setCheckNotice] = useState<{ msg: string; holdWhileToMoveIs: Color } | null>(null);
   const [hoverExplain, setHoverExplain] = useState<string | null>(null);
+  /** Training-only: opponent-piece click copy; swapped with selection hint when you pick your own piece. */
+  const [trainingOpponentLine, setTrainingOpponentLine] = useState<string | null>(null);
   const bannerTimer = useRef<number | null>(null);
 
   const aiColor: Color = humanColor === 'w' ? 'b' : 'w';
@@ -203,6 +206,16 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
+  /** In-check line stays up until the side that must respond finishes their move (or the game ends). */
+  useEffect(() => {
+    setCheckNotice((cn) => {
+      if (!cn) return cn;
+      if (outcome.phase !== 'playing') return null;
+      if (game.toMove !== cn.holdWhileToMoveIs) return null;
+      return cn;
+    });
+  }, [game.toMove, outcome.phase]);
+
   const capturePiles = useMemo(() => {
     const whitePieces: Piece[] = [];
     const blackPieces: Piece[] = [];
@@ -230,6 +243,8 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       setSelected(null);
       setHoverSq(null);
       setBanner(null);
+      setCheckNotice(null);
+      setTrainingOpponentLine(null);
       setHoverExplain(null);
     } catch {
       setBanner('Need both kings — enable the king for each side.');
@@ -261,8 +276,14 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     });
     setSelected(null);
     setHoverSq(null);
+    setCheckNotice(null);
+    setTrainingOpponentLine(null);
     setHoverExplain(null);
   }, [vsAi, aiColor]);
+
+  useEffect(() => {
+    if (!training) setTrainingOpponentLine(null);
+  }, [training]);
 
   const showBanner = useCallback((msg: string, ms = 3200) => {
     setBanner(msg);
@@ -284,22 +305,34 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     if (vsAi && game.toMove !== humanColor) return;
 
     const piece = at(game, sq);
+
     if (selected === null) {
       if (piece && piece.color === game.toMove) {
+        setTrainingOpponentLine(null);
         setSelected(sq);
+      } else if (piece && piece.color !== game.toMove) {
+        const line = `That's your opponent's ${pieceName(piece.type)}.`;
+        if (training) setTrainingOpponentLine(line);
+        else showBanner(line);
       }
       return;
     }
 
     if (selected === sq) {
       setSelected(null);
+      setTrainingOpponentLine(null);
       return;
     }
 
     const move = pickMoveForDestination(game, selected, sq);
     if (!move) {
       if (piece && piece.color === game.toMove) {
+        setTrainingOpponentLine(null);
         setSelected(sq);
+      } else if (piece && piece.color !== game.toMove) {
+        const line = `That's your opponent's ${pieceName(piece.type)} — not your turn to move it.`;
+        if (training) setTrainingOpponentLine(line);
+        else showBanner(line);
       }
       return;
     }
@@ -320,18 +353,25 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
     if (oc.phase === 'playing' && oc.sideInCheck) {
       const checked = oc.sideInCheck;
-      showBanner(`${checked === 'w' ? 'White' : 'Black'} is in check.`, 2800);
+      setCheckNotice({
+        msg: `${checked === 'w' ? 'White' : 'Black'} is in check.`,
+        holdWhileToMoveIs: checked,
+      });
     }
 
     setMoveLog((log) => [...log, move]);
     setSelected(null);
+    setTrainingOpponentLine(null);
     setHoverExplain(null);
 
     if (oc.phase === 'checkmate') {
+      setCheckNotice(null);
       showBanner(`Checkmate — ${oc.winner === 'w' ? 'White' : 'Black'} wins.`, 6000);
     } else if (oc.phase === 'stalemate') {
+      setCheckNotice(null);
       showBanner('Stalemate — draw.', 4000);
     } else if (oc.phase === 'draw') {
+      setCheckNotice(null);
       showBanner('Draw (fifty-move rule).', 4000);
     }
   };
@@ -365,11 +405,17 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         if (ocn.phase === 'playing' && ocn.sideInCheck) {
           const checked = ocn.sideInCheck;
           window.setTimeout(() => {
-            showBanner(`${checked === 'w' ? 'White' : 'Black'} is in check.`, 2800);
+            setCheckNotice({
+              msg: `${checked === 'w' ? 'White' : 'Black'} is in check.`,
+              holdWhileToMoveIs: checked,
+            });
           }, 0);
         }
         if (ocn.phase === 'checkmate') {
-          window.setTimeout(() => showBanner(`Checkmate — ${ocn.winner === 'w' ? 'White' : 'Black'} wins.`, 6000), 0);
+          window.setTimeout(() => {
+            setCheckNotice(null);
+            showBanner(`Checkmate — ${ocn.winner === 'w' ? 'White' : 'Black'} wins.`, 6000);
+          }, 0);
         }
         return [...log, m];
       });
@@ -392,8 +438,13 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       setHoverExplain(null);
       return;
     }
-    const selectedHint =
-      'Piece selected. Hover over a highlighted square for details about your legal moves, or hover any other square to see why it’s not a legal move for this piece,.';
+    if (trainingOpponentLine !== null) {
+      return;
+    }
+    const pSel = at(game, selected);
+    const nameLo = pSel ? pieceName(pSel.type) : 'piece';
+    const nameHi = nameLo.charAt(0).toUpperCase() + nameLo.slice(1);
+    const selectedHint = `${nameHi} selected. Hover over a highlighted square for details about your legal moves, or hover any other square to see why it’s not a legal move for this ${nameLo}.`;
     // Keep a line of copy whenever something is selected so the panel height doesn’t jump.
     if (hoverSq === null || hoverSq === selected) {
       setHoverExplain(selectedHint);
@@ -401,7 +452,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     }
     const ex = explainSquare(game, selected, hoverSq);
     setHoverExplain(ex.text);
-  }, [training, selected, hoverSq, game]);
+  }, [training, selected, hoverSq, game, trainingOpponentLine]);
 
   const aiThinking = vsAi && outcome.phase === 'playing' && game.toMove === aiColor;
   const [thinkingLineIx, setThinkingLineIx] = useState(0);
@@ -750,16 +801,21 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         </div>
       </div>
 
-      {banner || (training && selected !== null) ? (
+      {checkNotice || banner || (training && (selected !== null || trainingOpponentLine !== null)) ? (
         <div className="chess-match__foot">
+          {checkNotice ? (
+            <div className="chess-match__banner chess-match__banner--under-board" role="status">
+              {checkNotice.msg}
+            </div>
+          ) : null}
           {banner ? (
             <div className="chess-match__banner chess-match__banner--under-board" role="status">
               {banner}
             </div>
           ) : null}
-          {training && selected !== null ? (
+          {training && (selected !== null || trainingOpponentLine !== null) ? (
             <div className="chess-match__explain-slot">
-              <p className="chess-match__explain">{hoverExplain}</p>
+              <p className="chess-match__explain">{trainingOpponentLine ?? hoverExplain}</p>
             </div>
           ) : null}
         </div>

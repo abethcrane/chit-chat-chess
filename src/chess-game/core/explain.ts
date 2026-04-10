@@ -6,7 +6,7 @@ import {
   moveWouldBeCapture,
   pseudoLegalMovesFrom,
 } from './moves';
-import type { GameState, Move, Piece, Square } from './types';
+import type { GameState, Move, Piece, PieceType, Square } from './types';
 import { fileOf, opposite, rankOf, toAlgebraic } from './types';
 
 export type ExplainTag =
@@ -150,9 +150,11 @@ function explainPawnBlocked(
 
 export function explainSquare(state: GameState, from: Square, to: Square): { tag: ExplainTag; text: string } {
   if (from === to) {
+    const sel = pieceAt(state, from);
+    const nm = sel ? pieceName(sel.type) : 'piece';
     return {
       tag: 'info_same_square',
-      text: 'That’s the piece you selected — there’s no move until you aim at another square. Hover a highlighted square for a legal move, or any other square to see why it’s not allowed.',
+      text: `That’s the ${nm} you selected — there’s no move until you aim at another square. Hover a highlighted square for a legal move, or any other square to see why it’s not allowed.`,
     };
   }
 
@@ -161,7 +163,10 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
     return { tag: 'illegal_empty', text: 'Empty square — pick one of your pieces.' };
   }
   if (piece.color !== state.toMove) {
-    return { tag: 'illegal_opponent_piece', text: "That's your opponent's piece; it's not your turn to move it." };
+    return {
+      tag: 'illegal_opponent_piece',
+      text: `That's your opponent's ${pieceName(piece.type)}.`,
+    };
   }
 
   const legal = legalMovesFrom(state, from);
@@ -273,7 +278,8 @@ export function explainSquare(state: GameState, from: Square, to: Square): { tag
   return { tag: 'illegal_no_piece_pattern', text: 'That is not a legal destination for the selected piece.' };
 }
 
-function pieceName(t: string): string {
+/** Lowercase name for prose: "pawn", "king", etc. */
+export function pieceName(t: PieceType): string {
   switch (t) {
     case 'K':
       return 'king';
@@ -287,8 +293,6 @@ function pieceName(t: string): string {
       return 'knight';
     case 'P':
       return 'pawn';
-    default:
-      return t.toLowerCase();
   }
 }
 
