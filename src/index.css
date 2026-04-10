@@ -104,22 +104,66 @@ a:hover {
 
 .site-banner {
   width: 100%;
-  min-height: min(38vh, 360px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: none;
   border-bottom: none;
   box-shadow: none;
+  cursor: default;
+  outline: none;
 }
 
-.site-banner img {
+.site-banner:focus-visible {
+  outline: 2px solid var(--rose-deep);
+  outline-offset: 4px;
+}
+
+/* Fixed box so crossfade never shifts layout (same as previous single-img height). */
+.site-banner__stage {
+  position: relative;
+  width: 100%;
+  height: min(38vh, 360px);
+  max-height: min(38vh, 360px);
+  flex-shrink: 0;
+}
+
+.site-banner__layer {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  max-width: 100%;
-  height: min(38vh, 360px);
+  height: 100%;
   object-fit: contain;
   object-position: center center;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.site-banner__layer--bw {
+  opacity: 0;
+  z-index: 1;
+}
+
+.site-banner__layer--color {
+  opacity: 1;
+  z-index: 2;
+}
+
+.site-banner:hover .site-banner__layer--color,
+.site-banner:focus-visible .site-banner__layer--color {
+  opacity: 0;
+}
+
+.site-banner:hover .site-banner__layer--bw,
+.site-banner:focus-visible .site-banner__layer--bw {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-banner__layer {
+    transition: none;
+  }
 }
 
 .page {
