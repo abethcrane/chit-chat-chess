@@ -772,26 +772,27 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
         <div className="chess-match__board-only">
           <div className="chess-board-perspective">
-            <div className="chess-match__board-bar">
-              <div className="chess-match__board-bar-left">{turnCallout}</div>
-              <div className="chess-match__board-bar-right">
-                <label className="chess-match__rotate-board" htmlFor="chess-rotate-board">
-                  <input
-                    id="chess-rotate-board"
-                    type="checkbox"
-                    className="sr-only"
-                    checked={rotateBoardToSeat}
-                    onChange={(e) => setRotateBoardToSeat(e.target.checked)}
-                  />
-                  <span className="chess-match__rotate-board-track" aria-hidden="true" />
-                  <span className="chess-match__rotate-board-text">Face seat</span>
-                </label>
-                <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
-                  Undo
-                </button>
+            <div className="chess-match__board-stack">
+              <div className="chess-match__board-bar">
+                <div className="chess-match__board-bar-left">{turnCallout}</div>
+                <div className="chess-match__board-bar-right">
+                  <label className="chess-match__rotate-board" htmlFor="chess-rotate-board">
+                    <input
+                      id="chess-rotate-board"
+                      type="checkbox"
+                      className="sr-only"
+                      checked={rotateBoardToSeat}
+                      onChange={(e) => setRotateBoardToSeat(e.target.checked)}
+                    />
+                    <span className="chess-match__rotate-board-track" aria-hidden="true" />
+                    <span className="chess-match__rotate-board-text">Face seat</span>
+                  </label>
+                  <button type="button" className="chess-match__btn chess-match__btn--compact" onClick={undo} disabled={moveLog.length === 0}>
+                    Undo
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="chess-match__board-cluster">
+              <div className="chess-match__board-cluster">
               <aside
                 className="chess-match__graveyard chess-match__graveyard--white"
                 aria-label="Captured white pieces"
@@ -886,6 +887,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                   ))}
                 </div>
               </aside>
+            </div>
             </div>
           </div>
         </div>
