@@ -401,8 +401,8 @@ a:hover {
 
 .picnic {
   margin: 0 0 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
+  padding: 0.5rem 0.65rem 0.55rem;
+  border-radius: 10px;
   background:
     linear-gradient(180deg, rgba(159, 211, 199, 0.20), rgba(255, 255, 255, 0) 70%),
     linear-gradient(90deg, rgba(201, 160, 168, 0.14), rgba(155, 188, 255, 0.10));
@@ -412,10 +412,10 @@ a:hover {
 .picnic__header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.45rem;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
 }
 
 .picnic__line {
@@ -428,29 +428,67 @@ a:hover {
 .picnic__reroll {
   border: 1px solid rgba(44, 44, 44, 0.18);
   background: rgba(255, 255, 255, 0.75);
-  border-radius: 10px;
-  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.45rem;
   font: inherit;
+  font-size: 0.82rem;
   color: var(--ink);
 }
 
-.picnic__controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
+.picnic__scene {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
-.picnic__control {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.picnic select {
-  border: 1px solid rgba(44, 44, 44, 0.18);
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 10px;
-  padding: 0.45rem 0.6rem;
+.picnic__pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.12rem 0.28rem;
+  border: 1px solid rgba(44, 44, 44, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
   font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.picnic__pick:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(44, 44, 44, 0.2);
+}
+
+.picnic__pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.picnic__pick-label {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.picnic__pick-emoji {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.picnic__sep {
+  color: rgba(44, 44, 44, 0.35);
+  font-size: 0.75rem;
+  font-weight: 500;
+  user-select: none;
 }
 
 .lede {
@@ -540,6 +578,7 @@ a:hover {
 
 .picnic__title.section-title {
   margin-bottom: 0;
+  font-size: 1.12rem;
 }
 
 /* Fraunces subheads (form labels, instruction blocks, etc.) */

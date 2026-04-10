@@ -26,10 +26,24 @@ function pick<T extends readonly { id: string }[]>(arr: T): T[number]['id'] {
   return arr[i]!.id;
 }
 
+function cycleNext<T extends readonly { id: string }[]>(
+  arr: T,
+  current: T[number]['id'],
+  set: (id: T[number]['id']) => void,
+) {
+  const i = arr.findIndex((x) => x.id === current);
+  const next = arr[(i + 1) % arr.length]!;
+  set(next.id);
+}
+
 export function PicnicBar() {
   const [drink, setDrink] = useState<(typeof DRINKS)[number]['id']>(() => pick(DRINKS));
   const [snack, setSnack] = useState<(typeof SNACKS)[number]['id']>(() => pick(SNACKS));
   const [vibe, setVibe] = useState<(typeof VIBES)[number]['id']>(() => pick(VIBES));
+
+  const drinkItem = DRINKS.find((x) => x.id === drink)!;
+  const snackItem = SNACKS.find((x) => x.id === snack)!;
+  const vibeItem = VIBES.find((x) => x.id === vibe)!;
 
   return (
     <section className="picnic" aria-labelledby="picnic-bar-heading">
@@ -50,38 +64,50 @@ export function PicnicBar() {
         </button>
       </div>
 
-      <div className="picnic__controls">
-        <label className="picnic__control">
-          <span className="section-subtitle">Drink</span>
-          <select value={drink} onChange={(e) => setDrink(e.target.value as typeof drink)}>
-            {DRINKS.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.emoji} {x.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="picnic__control">
-          <span className="section-subtitle">Snack</span>
-          <select value={snack} onChange={(e) => setSnack(e.target.value as typeof snack)}>
-            {SNACKS.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.emoji} {x.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="picnic__control">
-          <span className="section-subtitle">Vibe</span>
-          <select value={vibe} onChange={(e) => setVibe(e.target.value as typeof vibe)}>
-            {VIBES.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.emoji} {x.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <p className="picnic__scene" role="group" aria-label="Picnic choices. Tap each to change.">
+        <button
+          type="button"
+          className="picnic__pick"
+          onClick={() => cycleNext(DRINKS, drink, setDrink)}
+          title={`${drinkItem.label} — tap for next`}
+          aria-label={`Drink: ${drinkItem.label}. Tap to change.`}
+        >
+          <span className="picnic__pick-label">drink</span>
+          <span className="picnic__pick-emoji" aria-hidden>
+            {drinkItem.emoji}
+          </span>
+        </button>
+        <span className="picnic__sep" aria-hidden>
+          +
+        </span>
+        <button
+          type="button"
+          className="picnic__pick"
+          onClick={() => cycleNext(SNACKS, snack, setSnack)}
+          title={`${snackItem.label} — tap for next`}
+          aria-label={`Snack: ${snackItem.label}. Tap to change.`}
+        >
+          <span className="picnic__pick-label">snack</span>
+          <span className="picnic__pick-emoji" aria-hidden>
+            {snackItem.emoji}
+          </span>
+        </button>
+        <span className="picnic__sep" aria-hidden>
+          +
+        </span>
+        <button
+          type="button"
+          className="picnic__pick"
+          onClick={() => cycleNext(VIBES, vibe, setVibe)}
+          title={`${vibeItem.label} — tap for next`}
+          aria-label={`Vibe: ${vibeItem.label}. Tap to change.`}
+        >
+          <span className="picnic__pick-label">vibe</span>
+          <span className="picnic__pick-emoji" aria-hidden>
+            {vibeItem.emoji}
+          </span>
+        </button>
+      </p>
     </section>
   );
 }
