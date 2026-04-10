@@ -47,5 +47,27 @@
     "woman-in-thought.jpg",
     "women at chess.jpg",
     "women-in-parlour.png"
-  ]
+  ],
+  "attributions": {
+    "women-in-parlour.png": {
+      "credit": "Alexis Fay, c. 1860",
+      "sourceLabel": "Getty Museum",
+      "sourceUrl": "https://www.getty.edu/art/collection/object/107C8Q"
+    },
+    "women at chess.jpg": {
+      "credit": "Alexis Fay, c. 1860",
+      "sourceLabel": "Getty Museum",
+      "sourceUrl": "https://www.getty.edu/art/collection/object/107C8Q"
+    },
+    "woman-in-thought.jpg": {
+      "credit": "Ledot, c. 1860",
+      "sourceLabel": "Getty Museum",
+      "sourceUrl": "https://www.getty.edu/art/collection/object/1074WX"
+    },
+    "men-playing-outside.jpg": {
+      "credit": "Martinus Rørbye, 1845",
+      "sourceLabel": "SMK Open",
+      "sourceUrl": "https://open.smk.dk/en/artwork/image/KMS495"
+    }
+  }
 }
