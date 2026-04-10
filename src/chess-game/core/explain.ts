@@ -136,6 +136,13 @@ function explainPawnBlocked(
         text: 'The square straight in front is occupied — pawns can’t jump over it, even on the first move.',
       };
     }
+    const pawnStartRank = piece.color === 'w' ? 1 : 6;
+    if (rankOf(from) !== pawnStartRank) {
+      return {
+        tag: 'illegal_no_piece_pattern',
+        text: 'pawns can only move 2 squares forward from their starting position.',
+      };
+    }
   }
 
   return null;

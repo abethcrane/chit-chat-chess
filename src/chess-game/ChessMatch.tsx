@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { chooseAiMove, type AiDifficulty } from './ai/search';
 import {
   ALL_PIECE_TYPES,
@@ -44,13 +45,25 @@ const PIECE_TOGGLE_ARIA: Record<PieceType, string> = {
 };
 
 /**
- * Map screen cell to square. Human’s pieces sit on the bottom row; files mirror for Black
- * (h-file on the left) like a typical chess UI.
+ * Fixed grid: rank 0 at top, rank 7 at bottom (white’s home toward the bottom of the screen).
+ * When seated as Black, the whole `.chess-board` is rotated 180° — same mapping, no remapping.
  */
-function visualToSquare(file: number, rankFromTop: number, human: Color): Square {
-  const rank = human === 'w' ? 7 - rankFromTop : rankFromTop;
-  const f = human === 'w' ? file : 7 - file;
-  return square(f, rank);
+function cellToSquare(file: number, rankFromTop: number): Square {
+  return square(file, 7 - rankFromTop);
+}
+
+/** Current rotateZ in degrees from getComputedStyle, or null if none. */
+function readRotateZDeg(el: HTMLElement): number | null {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === 'none') return null;
+  const m = t.match(/^matrix\(([-0-9eE.]+),\s*([-0-9eE.]+),/);
+  if (!m) return null;
+  const a = Number.parseFloat(m[1]!);
+  const b = Number.parseFloat(m[2]!);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  let deg = (Math.atan2(b, a) * 180) / Math.PI;
+  deg = ((deg % 360) + 360) % 360;
+  return deg;
 }
 
 function pickMoveForDestination(state: GameState, from: Square, to: Square): Move | null {
@@ -121,8 +134,67 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const bannerTimer = useRef<number | null>(null);
 
   const aiColor: Color = humanColor === 'w' ? 'b' : 'w';
-  /** Whose home rank is at the bottom. Both-sides mode: always White (standard diagram). Vs computer: your seat. */
-  const boardFacing: Color = vsAi ? humanColor : 'w';
+  /** Whose home rank is at the bottom. Both-sides: side to move (rotates each turn). Vs computer: your seat. */
+  const boardFacing: Color = vsAi ? humanColor : game.toMove;
+
+  /** Counter-rotate all sprites together after board spin: 0 while spinning to Black, 180 while spinning to White, then snap to upright. */
+  const [pieceSpinDeg, setPieceSpinDeg] = useState<0 | 180>(() => (boardFacing === 'b' ? 180 : 0));
+  const pieceSpinDegRef = useRef(pieceSpinDeg);
+  pieceSpinDegRef.current = pieceSpinDeg;
+
+  const boardFacingAnimRef = useRef<HTMLDivElement>(null);
+  const boardAngleRef = useRef(0);
+  const isFirstBoardFacingLayoutRef = useRef(true);
+  useLayoutEffect(() => {
+    const el = boardFacingAnimRef.current;
+    if (!el) return;
+    const target = boardFacing === 'b' ? 180 : 0;
+
+    if (isFirstBoardFacingLayoutRef.current) {
+      isFirstBoardFacingLayoutRef.current = false;
+      boardAngleRef.current = target;
+      el.style.transform = `rotateZ(${target}deg)`;
+      setPieceSpinDeg(boardFacing === 'b' ? 180 : 0);
+      return;
+    }
+
+    el.getAnimations().forEach((a) => a.cancel());
+    const fromComputed = readRotateZDeg(el);
+    let prevAngle = fromComputed !== null ? fromComputed : boardAngleRef.current;
+    const normDeg = (d: number) => ((d % 360) + 360) % 360;
+    const degDist = (a: number, b: number) => {
+      const d = Math.abs(normDeg(a) - normDeg(b));
+      return Math.min(d, 360 - d);
+    };
+    // Always play a half-turn on player switch, even if fill:forwards already left us at the target angle.
+    if (degDist(prevAngle, target) < 2) {
+      prevAngle = target === 180 ? 0 : 180;
+    }
+
+    const snapPieces = () => setPieceSpinDeg(boardFacing === 'b' ? 180 : 0);
+
+    const reduced =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      boardAngleRef.current = target;
+      el.style.transform = `rotateZ(${target}deg)`;
+      snapPieces();
+      return;
+    }
+
+    const duringAnim = target === 180 ? 0 : 180;
+    if (pieceSpinDegRef.current !== duringAnim) {
+      flushSync(() => setPieceSpinDeg(duringAnim));
+    }
+    const anim = el.animate(
+      [{ transform: `rotateZ(${prevAngle}deg)` }, { transform: `rotateZ(${target}deg)` }],
+      { duration: 380, easing: 'cubic-bezier(0.45, 0.05, 0.25, 1)', fill: 'forwards' },
+    );
+    anim.onfinish = () => {
+      boardAngleRef.current = target;
+      snapPieces();
+    };
+  }, [boardFacing]);
 
   const outcome = useMemo(() => evaluateOutcome(game), [game]);
 
@@ -316,7 +388,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
       return;
     }
     const selectedHint =
-      'Piece selected. Hover over a highlighted square for details about your legal moves, or hover any other square to see why it’s not a legal move for this piece.';
+      'Piece selected. Hover over a highlighted square for details about your legal moves, or hover any other square to see why it’s not a legal move for this piece,.';
     // Keep a line of copy whenever something is selected so the panel height doesn’t jump.
     if (hoverSq === null || hoverSq === selected) {
       setHoverExplain(selectedHint);
@@ -548,53 +620,59 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
               Undo
             </button>
           </div>
-          <div className="chess-board" role="grid" aria-label="Chess board">
-            {Array.from({ length: 8 }, (_, rankFromTop) => (
-              <div key={rankFromTop} className="chess-board__rank" role="row">
-                {Array.from({ length: 8 }, (_, file) => {
-                  const sq = visualToSquare(file, rankFromTop, boardFacing);
-                  // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
-                  const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
-                  const p = game.board[sq];
-                  const isSel = selected === sq;
-                  const isLegal = legalDests.has(sq);
-                  const isLegalCapture = isLegal && p && p.color !== game.toMove;
-                  const isLegalQuiet = isLegal && !isLegalCapture;
-                  const isHover = hoverSq === sq;
-                  return (
-                    <button
-                      key={sq}
-                      type="button"
-                      role="gridcell"
-                      aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
-                      className={[
-                        'chess-board__sq',
-                        light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
-                        isSel ? 'chess-board__sq--selected' : '',
-                        isLegal ? 'chess-board__sq--legal' : '',
-                        isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
-                        isLegalCapture ? 'chess-board__sq--legal-capture' : '',
-                        isHover ? 'chess-board__sq--hover' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      onClick={() => onSquareClick(sq)}
-                      onMouseEnter={() => setHoverSq(sq)}
-                      onMouseLeave={() => setHoverSq(null)}
-                    >
-                      {p ? (
-                        <img
-                          className="chess-board__piece"
-                          src={pieceImageUrl(base, p, sq)}
-                          alt=""
-                          style={{ ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]) }}
-                        />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="chess-board-perspective">
+            <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
+              {Array.from({ length: 8 }, (_, rankFromTop) => (
+                <div key={rankFromTop} className="chess-board__rank" role="row">
+                  {Array.from({ length: 8 }, (_, file) => {
+                    const sq = cellToSquare(file, rankFromTop);
+                    // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
+                    const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
+                    const p = game.board[sq];
+                    const isSel = selected === sq;
+                    const isLegal = legalDests.has(sq);
+                    const isLegalCapture = isLegal && p && p.color !== game.toMove;
+                    const isLegalQuiet = isLegal && !isLegalCapture;
+                    const isHover = hoverSq === sq;
+                    return (
+                      <button
+                        key={sq}
+                        type="button"
+                        role="gridcell"
+                        aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
+                        className={[
+                          'chess-board__sq',
+                          light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
+                          isSel ? 'chess-board__sq--selected' : '',
+                          isLegal ? 'chess-board__sq--legal' : '',
+                          isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
+                          isLegalCapture ? 'chess-board__sq--legal-capture' : '',
+                          isHover ? 'chess-board__sq--hover' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => onSquareClick(sq)}
+                        onMouseEnter={() => setHoverSq(sq)}
+                        onMouseLeave={() => setHoverSq(null)}
+                      >
+                        {p ? (
+                          <img
+                            className="chess-board__piece"
+                            src={pieceImageUrl(base, p, sq)}
+                            alt=""
+                            style={{
+                              ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]),
+                              transform: `rotate(${pieceSpinDeg}deg)`,
+                              transformOrigin: 'center center',
+                            }}
+                          />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
