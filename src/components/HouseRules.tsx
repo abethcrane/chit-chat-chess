@@ -2,7 +2,7 @@ export function HouseRules() {
   return (
     <section aria-labelledby="rules-heading" className="panel panel--note">
       <h2 id="rules-heading" className="section-title">
-        What if we could play chess without the stress?
+        Chess: ✅ &nbsp; Stress: ❌
       </h2>
       <p className="prose">
         Beth and Belle here: we think that by default chess is setup to be stressful. Unless you’re evenly matched with a close friend, it’s easy to feel like mistakes mean you’re not smart, and then to get tense and quiet and weird about a board game. Chit Chat Chess is us working super hard to undo that.
