@@ -9,7 +9,7 @@ import { SiteFooter } from './components/SiteFooter.tsx';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
-  ['--shell-art' as string]: `url("${import.meta.env.BASE_URL}images/chessboard-through-the-looking-glass-john-tenniel.jpg")`,
+  ['--shell-art' as string]: `url("${import.meta.env.BASE_URL}images/alice-john-tenniel/chessboard-through-the-looking-glass-john-tenniel.jpg")`,
 };
 
 export function App() {

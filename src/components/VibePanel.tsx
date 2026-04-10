@@ -4,7 +4,7 @@ const VIBE_IMAGES = [
     caption: 'Ask us about Grand Vizier chess (we have *ideas*).',
   },
   {
-    file: 'KMS495.jpg',
+    file: 'men-playing-outside.jpg',
     caption: "When it's this nice outside who cares if none of your clever traps are working out?",
   },
 ] as const;

@@ -1,5 +1,6 @@
-const ALICE_COLOR = 'alice-awake-queens-color.png';
-const ALICE_BW = 'alice-sleeping-queens-bw.png';
+const ALICE_DIR = 'alice-john-tenniel';
+const ALICE_COLOR = `${ALICE_DIR}/alice-awake-queens-color.png`;
+const ALICE_BW = `${ALICE_DIR}/alice-sleeping-queens-bw.png`;
 
 export function SiteBanner() {
   const base = import.meta.env.BASE_URL;
