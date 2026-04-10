@@ -12,7 +12,7 @@
   --square-dark: #2c2c2c;
   --board-edge: #1f1f1f;
   --shadow: rgba(0, 0, 0, 0.14);
-  font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  font-family: Literata, Georgia, 'Times New Roman', serif;
   font-size: 18px;
   line-height: 1.58;
   color: var(--ink);
@@ -110,30 +110,45 @@ a:hover {
   background: none;
   border-bottom: none;
   box-shadow: none;
-  cursor: default;
-  outline: none;
 }
 
-.site-banner:focus-visible {
+/* Hover/focus only on the art bounds (not the full-width strip). */
+.site-banner__hit {
+  max-width: 100%;
+  outline: none;
+  cursor: default;
+}
+
+.site-banner__hit:focus-visible {
   outline: 2px solid var(--rose-deep);
   outline-offset: 4px;
 }
 
-/* Fixed box so crossfade never shifts layout (same as previous single-img height). */
 .site-banner__stage {
   position: relative;
-  width: 100%;
+  display: block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+/* Same height cap as before; width follows image aspect — defines interactive outline. */
+.site-banner__sizer {
+  display: block;
   height: min(38vh, 360px);
-  max-height: min(38vh, 360px);
-  flex-shrink: 0;
+  width: auto;
+  max-width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .site-banner__layer {
   position: absolute;
-  inset: 0;
-  display: block;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: contain;
   object-position: center center;
   pointer-events: none;
@@ -150,13 +165,13 @@ a:hover {
   z-index: 2;
 }
 
-.site-banner:hover .site-banner__layer--color,
-.site-banner:focus-visible .site-banner__layer--color {
+.site-banner__hit:hover .site-banner__layer--color,
+.site-banner__hit:focus-visible .site-banner__layer--color {
   opacity: 0;
 }
 
-.site-banner:hover .site-banner__layer--bw,
-.site-banner:focus-visible .site-banner__layer--bw {
+.site-banner__hit:hover .site-banner__layer--bw,
+.site-banner__hit:focus-visible .site-banner__layer--bw {
   opacity: 1;
 }
 
@@ -182,6 +197,11 @@ a:hover {
   position: relative;
 }
 
+.page--board__inner {
+  position: relative;
+  z-index: 3;
+}
+
 .page--board::before {
   content: '';
   position: absolute;
@@ -189,6 +209,7 @@ a:hover {
   border: 1px dashed rgba(183, 110, 121, 0.28);
   pointer-events: none;
   border-radius: 1px;
+  z-index: 0;
 }
 
 /* Little pastel sparkles behind the main card */
@@ -196,6 +217,7 @@ a:hover {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 2;
   pointer-events: none;
   background:
     radial-gradient(circle at 12% 18%, rgba(159, 211, 199, 0.22) 0 18%, transparent 19%),
@@ -204,6 +226,104 @@ a:hover {
     radial-gradient(circle at 18% 86%, rgba(201, 160, 168, 0.18) 0 16%, transparent 17%);
   mix-blend-mode: multiply;
   opacity: 0.7;
+}
+
+/* Tiny pieces waltzing around the card edge (under sparkles, over dashed frame) */
+.page--board__dancers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  /* Ensure we track the full card even as the first (out-of-flow) child */
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.page--board__dancers-edge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+}
+
+.page--board__dancers-edge--top,
+.page--board__dancers-edge--bottom {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  left: 3%;
+  right: 3%;
+}
+
+.page--board__dancers-edge--top {
+  top: 0.35rem;
+}
+
+.page--board__dancers-edge--bottom {
+  bottom: 0.35rem;
+}
+
+.page--board__dancers-edge--right,
+.page--board__dancers-edge--left {
+  flex-direction: column;
+  justify-content: space-between;
+  top: 11%;
+  bottom: 11%;
+  width: 1.1rem;
+}
+
+.page--board__dancers-edge--right {
+  right: 0.2rem;
+}
+
+.page--board__dancers-edge--left {
+  left: 0.2rem;
+}
+
+.page--board__dancer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.42;
+  animation: page-board-dance 1.45s ease-in-out infinite;
+  animation-delay: calc(var(--d, 0) * 0.06s);
+}
+
+.page--board__dancer img {
+  width: 1.05rem;
+  height: auto;
+  max-height: 1.35rem;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
+}
+
+.page--board__dancers-edge--right .page--board__dancer img,
+.page--board__dancers-edge--left .page--board__dancer img {
+  width: 0.92rem;
+  max-height: 1.15rem;
+}
+
+@keyframes page-board-dance {
+  0%,
+  100% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@media (max-width: 639px) {
+  .page--board__dancers-edge--right,
+  .page--board__dancers-edge--left {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page--board__dancer {
+    animation: none;
+  }
 }
 
 .panel--note {
@@ -234,10 +354,10 @@ a:hover {
 }
 
 .pixel-label {
-  font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  font-size: 10px;
-  letter-spacing: 0.02em;
+  font-family: Literata, Georgia, serif;
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -380,6 +500,46 @@ a:hover {
   margin: 0 0 0.5rem;
 }
 
+.picnic__title.section-title {
+  margin-bottom: 0;
+}
+
+/* Fraunces subheads (form labels, instruction blocks, etc.) */
+.section-subtitle,
+.instruction-sheet__title {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.section-subtitle {
+  margin: 0;
+}
+
+.instruction-sheet__title {
+  margin: 0 0 0.35rem;
+}
+
+.instruction-sheet__heading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.35rem;
+}
+
+.instruction-sheet__heading-row .instruction-sheet__title {
+  margin: 0;
+}
+
+.instruction-sheet__piece-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.14));
+}
+
 .section-lede {
   margin: 0 0 1rem;
   font-size: 0.98rem;
@@ -411,58 +571,6 @@ a:hover {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
-.rules-playfield {
-  min-height: 14rem;
-  overflow: auto;
-}
-
-.rules-playfield__floater {
-  cursor: grab;
-  user-select: none;
-}
-
-.rules-playfield__floater.is-dragging {
-  cursor: grabbing;
-}
-
-.rules-playfield__piece-img {
-  display: block;
-  width: 100%;
-  height: auto;
-  pointer-events: none;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
-}
-
-.rules-playfield__intro {
-  margin: 0 0 0.75rem;
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: var(--accent);
-}
-
-.rules-playfield__clear {
-  clear: both;
-}
-
-/*
- * Float + adjacent <ul> breaks native outside markers (dots jump / overlap text).
- * Inside markers live on the first line box and wrap with the float like normal text.
- */
-.rules-playfield .instruction-sheet__list {
-  list-style-position: inside;
-  padding-left: 0;
-}
-
-.rules-playfield .instruction-sheet__list li::marker {
-  color: var(--accent);
-}
-
-.playfield-hint {
-  margin: 0.85rem 0 0;
-  font-size: 0.88rem;
-  color: var(--accent);
-}
-
 .instruction-sheet {
   margin: 0 0 1rem;
   padding: 0.85rem 1rem 1rem;
@@ -486,14 +594,6 @@ a:hover {
 
 .instruction-sheet__block:last-of-type {
   margin-bottom: 0.5rem;
-}
-
-.instruction-sheet__title {
-  margin: 0 0 0.35rem;
-  font-family: Fraunces, Georgia, serif;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--accent);
 }
 
 .instruction-sheet__list {
@@ -528,76 +628,8 @@ a:hover {
   color: var(--accent);
 }
 
-.piece-dock {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.piece-dock__piece {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border-radius: 10px;
-  border: 1px solid rgba(44, 44, 44, 0.25);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-}
-
-.piece-dock__piece img {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
-}
-
-.piece-dock__piece span {
-  font-size: 0.85rem;
-}
-
-.piece-dock__piece span.pixel-label {
-  font-size: 10px;
-}
-
 button {
   cursor: pointer;
-}
-
-.piece-dock__piece.is-active {
-  border-color: rgba(183, 110, 121, 0.75);
-  box-shadow: 0 0 0 2px rgba(183, 110, 121, 0.18);
-}
-
-.speech-bubble {
-  display: inline-block;
-  margin-top: 0.65rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(44, 44, 44, 0.2);
-  color: var(--ink);
-  max-width: 60ch;
-  box-shadow: 4px 4px 0 rgba(44, 44, 44, 0.06);
-  font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.speech-bubble::after {
-  content: "";
-  display: block;
-  width: 10px;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  border-right: 1px solid rgba(44, 44, 44, 0.2);
-  border-bottom: 1px solid rgba(44, 44, 44, 0.2);
-  transform: translateX(14px) rotate(45deg);
-  margin-top: 6px;
 }
 
 .static-prose {
@@ -861,9 +893,10 @@ footer.site-footer p {
 }
 
 .chess-match__piece-toggle-name {
-  font-family: "Press Start 2P", ui-monospace, monospace;
-  font-size: 7px;
-  letter-spacing: 0.06em;
+  font-family: Literata, Georgia, serif;
+  font-weight: 600;
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
   opacity: 0.88;

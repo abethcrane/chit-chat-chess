@@ -6,6 +6,7 @@ import { PicnicBar } from './components/PicnicBar';
 import { RulesPlayfield } from './components/RulesPlayfield';
 import { SiteBanner } from './components/SiteBanner';
 import { SiteFooter } from './components/SiteFooter.tsx';
+import { PageBoardDancers } from './components/PageBoardDancers';
 import { VibePanel } from './components/VibePanel';
 
 const shellStyle = {
@@ -25,6 +26,8 @@ export function App() {
     <div className="shell" style={shellStyle}>
       <SiteBanner />
       <div className="page page--board">
+        <PageBoardDancers />
+        <div className="page--board__inner">
         <Hero />
         <HouseRules />
         <PicnicBar />
@@ -43,7 +46,7 @@ export function App() {
           <h2 id="playfield-heading" className="section-title">
             How the enabled pieces move
           </h2>
-          <RulesPlayfield instructionSections={instructionSections} enabledPieceTypes={enabledPieceTypes} />
+          <RulesPlayfield instructionSections={instructionSections} />
         </section>
         <VibePanel />
         <section className="cta" aria-labelledby="cta-heading">
@@ -51,6 +54,7 @@ export function App() {
           <p>We’re still setting up the table. Check back soon!</p>
         </section>
         <SiteFooter />
+        </div>
       </div>
     </div>
   );

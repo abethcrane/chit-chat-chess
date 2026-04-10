@@ -31,9 +31,11 @@ export function PicnicBar() {
   const [vibe, setVibe] = useState<(typeof VIBES)[number]['id']>(() => pick(VIBES));
 
   return (
-    <section className="picnic" aria-label="Picnic vibes selector">
+    <section className="picnic" aria-labelledby="picnic-bar-heading">
       <div className="picnic__header">
-        <span className="pixel-label">Set the scene</span>
+        <h2 id="picnic-bar-heading" className="section-title picnic__title">
+          Set the scene
+        </h2>
         <button
           type="button"
           className="picnic__reroll"
@@ -49,7 +51,7 @@ export function PicnicBar() {
 
       <div className="picnic__controls">
         <label className="picnic__control">
-          <span className="pixel-label">drink</span>
+          <span className="section-subtitle">Drink</span>
           <select value={drink} onChange={(e) => setDrink(e.target.value as typeof drink)}>
             {DRINKS.map((x) => (
               <option key={x.id} value={x.id}>
@@ -59,7 +61,7 @@ export function PicnicBar() {
           </select>
         </label>
         <label className="picnic__control">
-          <span className="pixel-label">snack</span>
+          <span className="section-subtitle">Snack</span>
           <select value={snack} onChange={(e) => setSnack(e.target.value as typeof snack)}>
             {SNACKS.map((x) => (
               <option key={x.id} value={x.id}>
@@ -69,7 +71,7 @@ export function PicnicBar() {
           </select>
         </label>
         <label className="picnic__control">
-          <span className="pixel-label">vibe</span>
+          <span className="section-subtitle">Vibe</span>
           <select value={vibe} onChange={(e) => setVibe(e.target.value as typeof vibe)}>
             {VIBES.map((x) => (
               <option key={x.id} value={x.id}>
