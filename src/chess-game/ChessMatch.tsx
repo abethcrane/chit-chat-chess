@@ -812,57 +812,59 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
                 </div>
               </aside>
 
-              <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
-                {Array.from({ length: 8 }, (_, rankFromTop) => (
-                  <div key={rankFromTop} className="chess-board__rank" role="row">
-                    {Array.from({ length: 8 }, (_, file) => {
-                      const sq = cellToSquare(file, rankFromTop);
-                      // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
-                      const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
-                      const p = game.board[sq];
-                      const isSel = selected === sq;
-                      const isLegal = legalDests.has(sq);
-                      const isLegalCapture = isLegal && p && p.color !== game.toMove;
-                      const isLegalQuiet = isLegal && !isLegalCapture;
-                      const isHover = hoverSq === sq;
-                      return (
-                        <button
-                          key={sq}
-                          type="button"
-                          role="gridcell"
-                          aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
-                          className={[
-                            'chess-board__sq',
-                            light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
-                            isSel ? 'chess-board__sq--selected' : '',
-                            isLegal ? 'chess-board__sq--legal' : '',
-                            isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
-                            isLegalCapture ? 'chess-board__sq--legal-capture' : '',
-                            isHover ? 'chess-board__sq--hover' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          onClick={() => onSquareClick(sq)}
-                          onMouseEnter={() => setHoverSq(sq)}
-                          onMouseLeave={() => setHoverSq(null)}
-                        >
-                          {p ? (
-                            <img
-                              className="chess-board__piece"
-                              src={pieceImageUrl(base, p, sq)}
-                              alt=""
-                              style={{
-                                ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]),
-                                transform: `rotate(${pieceSpinDeg}deg)`,
-                                transformOrigin: 'center center',
-                              }}
-                            />
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+              <div className="chess-board-spin-clip">
+                <div ref={boardFacingAnimRef} className="chess-board" role="grid" aria-label="Chess board">
+                  {Array.from({ length: 8 }, (_, rankFromTop) => (
+                    <div key={rankFromTop} className="chess-board__rank" role="row">
+                      {Array.from({ length: 8 }, (_, file) => {
+                        const sq = cellToSquare(file, rankFromTop);
+                        // FIDE: nearest corner to each player is a light square → h1 & a8 light; a1 & h8 dark.
+                        const light = (fileOf(sq) + rankOf(sq)) % 2 === 1;
+                        const p = game.board[sq];
+                        const isSel = selected === sq;
+                        const isLegal = legalDests.has(sq);
+                        const isLegalCapture = isLegal && p && p.color !== game.toMove;
+                        const isLegalQuiet = isLegal && !isLegalCapture;
+                        const isHover = hoverSq === sq;
+                        return (
+                          <button
+                            key={sq}
+                            type="button"
+                            role="gridcell"
+                            aria-label={`${toAlgebraic(sq)}${p ? ` ${p.color} ${p.type}` : ' empty'}`}
+                            className={[
+                              'chess-board__sq',
+                              light ? 'chess-board__sq--light' : 'chess-board__sq--dark',
+                              isSel ? 'chess-board__sq--selected' : '',
+                              isLegal ? 'chess-board__sq--legal' : '',
+                              isLegalQuiet ? 'chess-board__sq--legal-quiet' : '',
+                              isLegalCapture ? 'chess-board__sq--legal-capture' : '',
+                              isHover ? 'chess-board__sq--hover' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                            onClick={() => onSquareClick(sq)}
+                            onMouseEnter={() => setHoverSq(sq)}
+                            onMouseLeave={() => setHoverSq(null)}
+                          >
+                            {p ? (
+                              <img
+                                className="chess-board__piece"
+                                src={pieceImageUrl(base, p, sq)}
+                                alt=""
+                                style={{
+                                  ['--ph' as string]: String(PIECE_HEIGHT_RATIO[p.type]),
+                                  transform: `rotate(${pieceSpinDeg}deg)`,
+                                  transformOrigin: 'center center',
+                                }}
+                              />
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <aside
