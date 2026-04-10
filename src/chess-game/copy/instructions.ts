@@ -1,6 +1,6 @@
 import type { PieceType } from '../core/types';
 
-/** Rich block shown above the Pretext canvas. */
+/** Rich block for rules UI (headings + bullets per piece type). */
 export type InstructionSection = {
   id: PieceType;
   title: string;
@@ -49,10 +49,6 @@ const BULLETS: Record<PieceType, string[]> = {
 
 const ORDER: PieceType[] = ['K', 'Q', 'R', 'B', 'N', 'P'];
 
-/** Short line laid out on the canvas around the draggable piece. */
-export const PRETEXT_CANVAS_CAPTION =
-  'Drag the piece anywhere you like — the words will part and flow around it. Rules for each piece are listed above.';
-
 export function composeInstructionSections(enabledTypes: ReadonlySet<PieceType>): InstructionSection[] {
   const out: InstructionSection[] = [];
   for (const t of ORDER) {
@@ -71,7 +67,7 @@ export function composeInstructionPlain(enabledTypes: ReadonlySet<PieceType>): s
   return parts.join(' ');
 }
 
-/** @deprecated Prefer composeInstructionSections + PRETEXT_CANVAS_CAPTION */
+/** @deprecated Prefer composeInstructionSections */
 export function composeInstructionText(enabledTypes: ReadonlySet<PieceType>): string {
   return composeInstructionPlain(enabledTypes);
 }

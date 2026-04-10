@@ -367,18 +367,50 @@ a:hover {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
-.playfield-wrap canvas {
+.rules-playfield {
+  min-height: 14rem;
+  overflow: auto;
+}
+
+.rules-playfield__floater {
+  cursor: grab;
+  user-select: none;
+}
+
+.rules-playfield__floater.is-dragging {
+  cursor: grabbing;
+}
+
+.rules-playfield__piece-img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 2px;
-  cursor: grab;
-  touch-action: none;
-  border: 2px solid var(--board-edge);
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
 }
 
-.playfield-wrap canvas:active {
-  cursor: grabbing;
+.rules-playfield__intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--accent);
+}
+
+.rules-playfield__clear {
+  clear: both;
+}
+
+/*
+ * Float + adjacent <ul> breaks native outside markers (dots jump / overlap text).
+ * Inside markers live on the first line box and wrap with the float like normal text.
+ */
+.rules-playfield .instruction-sheet__list {
+  list-style-position: inside;
+  padding-left: 0;
+}
+
+.rules-playfield .instruction-sheet__list li::marker {
+  color: var(--accent);
 }
 
 .playfield-hint {

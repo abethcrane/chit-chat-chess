@@ -22,13 +22,10 @@ export {
   composeInstructionSections,
   composeInstructionText,
   instructionForType,
-  PRETEXT_CANVAS_CAPTION,
   type InstructionSection,
 } from './copy/instructions';
 
 export { pieceImagePath, pieceImageUrl } from './pieceArt';
-
-export { createTeachingSandbox } from './core/pretextSandbox';
 
 export type { AiDifficulty } from './ai/search';
 export { chooseAiMove } from './ai/search';
