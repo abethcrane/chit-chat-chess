@@ -161,13 +161,29 @@ a:hover {
   z-index: 2;
 }
 
-.site-banner__hit:hover .site-banner__layer--color,
+@media (hover: hover) {
+  .site-banner__hit:hover .site-banner__layer--color {
+    opacity: 0;
+  }
+
+  .site-banner__hit:hover .site-banner__layer--bw {
+    opacity: 1;
+  }
+}
+
 .site-banner__hit:focus-visible .site-banner__layer--color {
   opacity: 0;
 }
 
-.site-banner__hit:hover .site-banner__layer--bw,
 .site-banner__hit:focus-visible .site-banner__layer--bw {
+  opacity: 1;
+}
+
+.site-banner__hit--tapped .site-banner__layer--color {
+  opacity: 0;
+}
+
+.site-banner__hit--tapped .site-banner__layer--bw {
   opacity: 1;
 }
 
@@ -1079,6 +1095,12 @@ footer.site-footer p {
 
 .chess-match__piece-toggle--off .chess-match__piece-toggle-face img {
   filter: grayscale(0.9) brightness(0.68) opacity(0.5);
+}
+
+.chess-match__piece-toggle--locked {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .chess-match__piece-toggle--king {
