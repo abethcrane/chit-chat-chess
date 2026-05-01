@@ -4,12 +4,7 @@ export function HouseRules() {
       <h2 id="rules-heading" className="section-title">
         Chess: ✅ &nbsp; Stress: ❌
       </h2>
-      <p className="prose">We (Beth and Belle - hi 👋) think that by default chess is set up to be stressful - it’s easy to feel like mistakes mean you’re not smart, and then to have a miserable time playing a board game.
-      </p>
-      <p className="prose">
-        We’re here for the love of the game, and ideally to learn and improve as we play....but mostly to have a nice time with our friends! When we play together, we treat it like a cooperative experience in making a good, interesting game. We’ll rewind a few moves
-        to try another idea, point out a move we think the other might not want to make, and make jokes
-        about the pieces.
+      <p className="prose">We (Beth and Belle - hi 👋) think that by default chess is set up to be stressful....but that it doesn't have to be! We've loved finding a way to be silly and not take ourselves so seriously while we play, and we'd love to see if we can create that energy/vibe for other folks  ☺️
       </p>
       <p className="prose">
         If you like games/puzzles, and chatting with friends: come join us! We’ll
