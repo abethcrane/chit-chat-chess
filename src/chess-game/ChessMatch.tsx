@@ -12,10 +12,45 @@ import {
 } from './core/types';
 import { fileOf, rankOf, square, toAlgebraic } from './core/types';
 import { pieceAt as at } from './core/board';
-import { createGame, evaluateOutcome, outcomeAfterMove, tryApplyMove } from './core/game';
+import { createGame, evaluateOutcome, outcomeAfterMove, stripPieceTypes, tryApplyMove } from './core/game';
 import { explainSquare, pieceName } from './core/explain';
 import { getCapturedPiece, legalMovesFrom } from './core/moves';
 import { PIECE_HEIGHT_RATIO, pieceImageUrl, pieceTypeTogglePath } from './pieceArt';
+
+// ─── localStorage persistence ───────────────────────────────────────────────
+
+const LS_KEY = 'ccc_game';
+
+type PersistedState = {
+  start: GameState;
+  moveLog: Move[];
+  enabledTypes: PieceType[];
+  vsAi: boolean;
+  humanColor: Color;
+  aiDifficulty: AiDifficulty;
+  training: boolean;
+  rotateBoardToSeat: boolean;
+  hiddenPieces?: [Square, Piece][];
+  reversibleTypes?: PieceType[];
+};
+
+function saveState(s: PersistedState): void {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(s));
+  } catch { /* quota exceeded — non-critical */ }
+}
+
+function loadState(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedState;
+    if (!parsed.start || !Array.isArray(parsed.moveLog) || !Array.isArray(parsed.enabledTypes)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 const CAPTURE_SORT: PieceType[] = ['Q', 'R', 'B', 'N', 'P'];
 
@@ -118,21 +153,43 @@ export type ChessMatchProps = {
 
 export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChange }: ChessMatchProps = {}) {
   const base = import.meta.env.BASE_URL;
-  const [localEnabled, setLocalEnabled] = useState<Set<PieceType>>(() => new Set(ALL_PIECE_TYPES));
+  const saved = useRef(loadState());
+
+  const [localEnabled, setLocalEnabled] = useState<Set<PieceType>>(
+    () => saved.current ? new Set(saved.current.enabledTypes) : new Set(ALL_PIECE_TYPES),
+  );
   const enabledTypes = controlledEnabled ?? localEnabled;
   const setEnabledTypes = onEnabledTypesChange ?? setLocalEnabled;
-  const [vsAi, setVsAi] = useState(false);
-  const [humanColor, setHumanColor] = useState<Color>(() => (Math.random() < 0.5 ? 'w' : 'b'));
-  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
-  const [training, setTraining] = useState(true);
-  const [rotateBoardToSeat, setRotateBoardToSeat] = useState(false);
+  const [vsAi, setVsAi] = useState(() => saved.current?.vsAi ?? false);
+  const [humanColor, setHumanColor] = useState<Color>(
+    () => saved.current?.humanColor ?? (Math.random() < 0.5 ? 'w' : 'b'),
+  );
+  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>(
+    () => saved.current?.aiDifficulty ?? 'medium',
+  );
+  const [training, setTraining] = useState(() => saved.current?.training ?? true);
+  const [rotateBoardToSeat, setRotateBoardToSeat] = useState(
+    () => saved.current?.rotateBoardToSeat ?? false,
+  );
   const [start, setStart] = useState<GameState>(() => {
+    if (saved.current?.start) return saved.current.start;
     const s = new Set(ALL_PIECE_TYPES);
     return createGame(s);
   });
-  const [moveLog, setMoveLog] = useState<Move[]>([]);
+  const [moveLog, setMoveLog] = useState<Move[]>(() => saved.current?.moveLog ?? []);
   const startRef = useRef(start);
   startRef.current = start;
+
+  // Notify parent of rehydrated enabledTypes on mount
+  const didHydrateParent = useRef(false);
+  useEffect(() => {
+    if (didHydrateParent.current) return;
+    didHydrateParent.current = true;
+    if (saved.current && onEnabledTypesChange) {
+      onEnabledTypesChange(new Set(saved.current.enabledTypes));
+    }
+    saved.current = null;
+  }, [onEnabledTypesChange]);
 
   const game = useMemo(() => playOut(start, moveLog), [start, moveLog]);
   const [selected, setSelected] = useState<Square | null>(null);
@@ -148,7 +205,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   /** Where the seat should face (game state). With Face seat + both sides, the animated `boardFacing` trails this briefly after each move. */
   const seatTargetFacing: Color = rotateBoardToSeat ? (vsAi ? humanColor : game.toMove) : 'w';
 
-  const [boardFacing, setBoardFacing] = useState<Color>('w');
+  const [boardFacing, setBoardFacing] = useState<Color>(seatTargetFacing);
   const boardFacingRef = useRef(boardFacing);
   boardFacingRef.current = boardFacing;
 
@@ -233,6 +290,7 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   const boardFacingAnimRef = useRef<HTMLDivElement>(null);
   const boardAngleRef = useRef(0);
   const isFirstBoardFacingLayoutRef = useRef(true);
+  const prevBoardFacingForSpinRef = useRef<Color | null>(null);
   useLayoutEffect(() => {
     const el = boardFacingAnimRef.current;
     if (!el) return;
@@ -240,11 +298,18 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
     if (isFirstBoardFacingLayoutRef.current) {
       isFirstBoardFacingLayoutRef.current = false;
+      prevBoardFacingForSpinRef.current = boardFacingForSpin;
       boardAngleRef.current = target;
       el.style.transform = `rotateZ(${target}deg)`;
       setPieceSpinDeg(boardFacingForSpin === 'b' ? 180 : 0);
       return;
     }
+
+    // Skip if the dependency value hasn't actually changed (e.g. StrictMode remount)
+    if (boardFacingForSpin === prevBoardFacingForSpinRef.current) {
+      return;
+    }
+    prevBoardFacingForSpinRef.current = boardFacingForSpin;
 
     el.getAnimations().forEach((a) => a.cancel());
     const fromComputed = readRotateZDeg(el);
@@ -314,12 +379,15 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
   }, [start, moveLog]);
 
   const beginNewGame = useCallback(() => {
-    const set = new Set(enabledTypes);
-    set.add('K');
+    const set = new Set(ALL_PIECE_TYPES);
     try {
       const g = createGame(set);
       setStart(g);
       setMoveLog([]);
+      setEnabledTypes(set);
+      setHiddenPieces(new Map());
+      setReversibleTypes(new Set());
+      stashedReversibleRef.current = new Set();
       setSelected(null);
       setHoverSq(null);
       setBanner(null);
@@ -329,30 +397,155 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     } catch {
       setBanner('Need both kings — enable the king for each side.');
     }
-  }, [enabledTypes]);
+  }, [setEnabledTypes]);
 
-  /** When the piece-type set changes, start a fresh standard position (same color) so the board matches the toggles. */
-  const pieceSetSigRef = useRef<string | null>(null);
+  /**
+   * Tracks pieces that have been "hidden" by toggling off, keyed by square.
+   * If the user toggles back on before making any moves, they reappear.
+   * Once a move is made with pieces hidden, the hidden pieces are discarded
+   * and toggling back on is locked (must Reset).
+   */
+  const [hiddenPieces, setHiddenPieces] = useState<Map<Square, Piece>>(
+    () => saved.current?.hiddenPieces ? new Map(saved.current.hiddenPieces) : new Map(),
+  );
+  /** Types that were just toggled off and can still be toggled back on (no moves made since). */
+  const [reversibleTypes, setReversibleTypes] = useState<Set<PieceType>>(
+    () => saved.current?.reversibleTypes ? new Set(saved.current.reversibleTypes) : new Set(),
+  );
+
+  // Persist to localStorage on every meaningful state change
   useEffect(() => {
-    const sig = [...enabledTypes].sort().join('');
-    if (pieceSetSigRef.current === null) {
-      pieceSetSigRef.current = sig;
+    saveState({
+      start,
+      moveLog,
+      enabledTypes: [...enabledTypes],
+      vsAi,
+      humanColor,
+      aiDifficulty,
+      training,
+      rotateBoardToSeat,
+      hiddenPieces: hiddenPieces.size > 0 ? [...hiddenPieces.entries()] : undefined,
+      reversibleTypes: reversibleTypes.size > 0 ? [...reversibleTypes] : undefined,
+    });
+  }, [start, moveLog, enabledTypes, vsAi, humanColor, aiDifficulty, training, rotateBoardToSeat, hiddenPieces, reversibleTypes]);
+
+  const prevEnabledRef = useRef<Set<PieceType>>(enabledTypes);
+  useEffect(() => {
+    const prev = prevEnabledRef.current;
+    prevEnabledRef.current = enabledTypes;
+    if (prev === enabledTypes) return;
+
+    const removed: PieceType[] = [];
+    const added: PieceType[] = [];
+    for (const t of prev) {
+      if (t !== 'K' && !enabledTypes.has(t)) removed.push(t);
+    }
+    for (const t of enabledTypes) {
+      if (t !== 'K' && !prev.has(t)) added.push(t);
+    }
+
+    if (removed.length === 0 && added.length === 0) return;
+
+    if (removed.length > 0) {
+      const currentGame = playOut(start, moveLog);
+      const newHidden = new Map(hiddenPieces);
+      const removedSet = new Set(removed);
+      for (let sq = 0; sq < 64; sq++) {
+        const p = currentGame.board[sq];
+        if (p && removedSet.has(p.type)) {
+          newHidden.set(sq, p);
+        }
+      }
+      const stripped = stripPieceTypes(currentGame, removedSet);
+      setStart(stripped);
+      setMoveLog([]);
+      setHiddenPieces(newHidden);
+      // Only the just-removed types are reversible; previous reversible types are now committed
+      setReversibleTypes(new Set(removed));
+      stashedReversibleRef.current = new Set();
+      setSelected(null);
+      setHoverSq(null);
+      setCheckNotice(null);
+      setTrainingOpponentLine(null);
+      setHoverExplain(null);
       return;
     }
-    if (pieceSetSigRef.current === sig) return;
-    pieceSetSigRef.current = sig;
-    beginNewGame();
-  }, [enabledTypes, beginNewGame]);
+
+    if (added.length > 0 && hiddenPieces.size > 0) {
+      // Only restore types that are currently reversible
+      const restorable = added.filter((t) => reversibleTypes.has(t));
+      if (restorable.length === 0) return;
+
+      const addedSet = new Set(restorable);
+      const currentGame = playOut(start, moveLog);
+      const newBoard = [...currentGame.board];
+      const newHidden = new Map(hiddenPieces);
+      for (const [sq, p] of hiddenPieces) {
+        if (addedSet.has(p.type)) {
+          if (newBoard[sq] === null) {
+            newBoard[sq] = p;
+          }
+          newHidden.delete(sq);
+        }
+      }
+      const castling = { ...currentGame.castling };
+      const isRook = (s: number, c: Color) => newBoard[s]?.type === 'R' && newBoard[s]?.color === c;
+      const kingHome = (c: Color) => {
+        const ks = c === 'w' ? square(4, 0) : square(4, 7);
+        return newBoard[ks]?.type === 'K' && newBoard[ks]?.color === c;
+      };
+      if (addedSet.has('R')) {
+        if (kingHome('w')) {
+          if (isRook(square(0, 0), 'w')) castling.wQ = true;
+          if (isRook(square(7, 0), 'w')) castling.wK = true;
+        }
+        if (kingHome('b')) {
+          if (isRook(square(0, 7), 'b')) castling.bQ = true;
+          if (isRook(square(7, 7), 'b')) castling.bK = true;
+        }
+      }
+      const restored: GameState = { ...currentGame, board: newBoard, castling };
+      setStart(restored);
+      setMoveLog([]);
+      setHiddenPieces(newHidden);
+      // Remove restored types from reversible set
+      const newReversible = new Set(reversibleTypes);
+      for (const t of restorable) newReversible.delete(t);
+      setReversibleTypes(newReversible);
+      setSelected(null);
+      setHoverSq(null);
+      setCheckNotice(null);
+      setTrainingOpponentLine(null);
+      setHoverExplain(null);
+      return;
+    }
+
+    // Toggling on with no hidden pieces (pre-game) — fresh game
+    if (added.length > 0 && hiddenPieces.size === 0) {
+      beginNewGame();
+    }
+  }, [enabledTypes]); // intentionally sparse deps
+
+  /** Stashed reversibleTypes so undo can restore them when moveLog empties. */
+  const stashedReversibleRef = useRef<Set<PieceType>>(new Set());
 
   const undo = useCallback(() => {
     setMoveLog((log) => {
       if (log.length === 0) return log;
-      if (!vsAi) return log.slice(0, -1);
-      const st = startRef.current;
-      const g = playOut(st, log);
-      if (g.toMove === aiColor) return log.slice(0, -1);
-      if (log.length >= 2) return log.slice(0, -2);
-      return log.slice(0, -1);
+      let next: Move[];
+      if (!vsAi) {
+        next = log.slice(0, -1);
+      } else {
+        const st = startRef.current;
+        const g = playOut(st, log);
+        if (g.toMove === aiColor) next = log.slice(0, -1);
+        else if (log.length >= 2) next = log.slice(0, -2);
+        else next = log.slice(0, -1);
+      }
+      if (next.length === 0 && stashedReversibleRef.current.size > 0) {
+        setReversibleTypes(new Set(stashedReversibleRef.current));
+      }
+      return next;
     });
     setSelected(null);
     setHoverSq(null);
@@ -373,10 +566,12 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
 
   const toggleType = (t: PieceType) => {
     if (t === 'K') return;
-    const prev = enabledTypes;
-    const next = new Set(prev);
-    if (next.has(t)) next.delete(t);
-    else next.add(t);
+    const turningOn = !enabledTypes.has(t);
+    // Can only toggle on if it's reversible (just toggled off, no moves since)
+    if (turningOn && !reversibleTypes.has(t)) return;
+    const next = new Set(enabledTypes);
+    if (turningOn) next.add(t);
+    else next.delete(t);
     setEnabledTypes(next);
   };
 
@@ -440,6 +635,10 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
     }
 
     setMoveLog((log) => [...log, move]);
+    if (reversibleTypes.size > 0) {
+      stashedReversibleRef.current = new Set(reversibleTypes);
+      setReversibleTypes(new Set());
+    }
     setSelected(null);
     setTrainingOpponentLine(null);
     setHoverExplain(null);
@@ -499,13 +698,17 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         }
         return [...log, m];
       });
+      if (reversibleTypes.size > 0) {
+        stashedReversibleRef.current = new Set(reversibleTypes);
+        setReversibleTypes(new Set());
+      }
     }, 220);
 
     return () => {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [game, vsAi, aiColor, aiDifficulty, showBanner]);
+  }, [game, vsAi, aiColor, aiDifficulty, showBanner, reversibleTypes.size]);
 
   const legalDests = useMemo(() => {
     if (!training || selected === null || outcome.phase !== 'playing') return new Set<Square>();
@@ -608,22 +811,26 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         <div className="chess-match__toggles" aria-label="Pieces on the board">
           {ALL_PIECE_TYPES.map((t) => {
             const on = t === 'K' || enabledTypes.has(t);
+            const lockedOn = t === 'K';
+            const lockedOff = !on && !reversibleTypes.has(t) && hiddenPieces.size > 0;
             return (
               <label
                 key={t}
                 className={[
                   'chess-match__piece-toggle',
                   on ? 'chess-match__piece-toggle--on' : 'chess-match__piece-toggle--off',
-                  t === 'K' ? 'chess-match__piece-toggle--king' : '',
+                  lockedOn ? 'chess-match__piece-toggle--king' : '',
+                  lockedOff ? 'chess-match__piece-toggle--locked' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
+                title={lockedOff ? 'Reset the board to add this piece back' : undefined}
               >
                 <input
                   type="checkbox"
                   className="sr-only"
                   checked={on}
-                  disabled={t === 'K'}
+                  disabled={lockedOn || lockedOff}
                   onChange={() => toggleType(t)}
                   aria-label={PIECE_TOGGLE_ARIA[t]}
                 />
@@ -650,9 +857,9 @@ export function ChessMatch({ enabledTypes: controlledEnabled, onEnabledTypesChan
         </div>
         <p
           className="chess-match__toggle-note"
-          title="Toggling a piece type starts a fresh board; your seat stays the same and move history clears."
+          title="Toggle pieces off to remove them. Toggle back on before your next move to restore them. After a move, hit Reset to bring them back."
         >
-          Toggle which pieces are in play - this will <strong>start a new game </strong> (reset the board).
+          Toggle pieces off to remove them mid-game.{hiddenPieces.size > 0 && reversibleTypes.size === 0 ? ' Reset to re-enable.' : ''}
         </p>
         <div className="chess-match__controls">
           <div className="chess-match__control-panel">

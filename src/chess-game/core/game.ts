@@ -113,4 +113,27 @@ export function outcomeAfterMove(prev: GameState, move: Move): GameOutcome {
   return evaluateOutcome(next);
 }
 
+/**
+ * Strip all pieces of the given types from an in-progress game state.
+ * Kings are never stripped. Castling rights are invalidated if rooks disappear.
+ * EP square is cleared if the capturing pawn type is being removed.
+ */
+export function stripPieceTypes(state: GameState, typesToRemove: ReadonlySet<PieceType>): GameState {
+  const board = state.board.map((p) => {
+    if (!p) return null;
+    if (p.type === 'K') return p;
+    return typesToRemove.has(p.type) ? null : p;
+  });
+
+  const castling = { ...state.castling };
+  if (!isHomeRook(board, square(0, 0), 'w')) castling.wQ = false;
+  if (!isHomeRook(board, square(7, 0), 'w')) castling.wK = false;
+  if (!isHomeRook(board, square(0, 7), 'b')) castling.bQ = false;
+  if (!isHomeRook(board, square(7, 7), 'b')) castling.bK = false;
+
+  const epSquare = typesToRemove.has('P') ? null : state.epSquare;
+
+  return { ...state, board, castling, epSquare };
+}
+
 export { applyMove, applyMoveUnchecked, isInCheck, legalMoves, legalMovesList };
