@@ -4,10 +4,7 @@ export function Hero() {
     <header className="hero">
       <div>
         <h1 className="hero__title">Chit Chat Chess</h1>
-        <p className="hero__tag lede">Let's have a nice time together. Also: chess.</p>
-        <p className="hero__mascot">
-          Safe, silly, cooperative games for people who know the rules (or want a gentle intro).
-        </p>
+        <p className="hero__tag lede">What if we had a nice time...<br /><br />...and also...<br/><br/>...played chess 👉👈</p>
       </div>
       <img
         className="hero__img"
